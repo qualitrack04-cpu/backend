@@ -1,8 +1,8 @@
 public class Finding
 {
     public Guid Id { get; set; }
-    public Guid SessionId { get; set; }
-    public AuditSession Session { get; set; } = null!;
+    public Guid? SessionId { get; set; }
+    public AuditSession? Session { get; set; }
     public FindingCategory Category { get; set; }
     public string Description { get; set; } = string.Empty;
     public string ClauseRef { get; set; } = string.Empty;
