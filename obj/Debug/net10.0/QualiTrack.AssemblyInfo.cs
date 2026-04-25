@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("QualiTrack")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1bd846b6e3426ea76507539d5f77f15a351231a2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dec6d0a483753f8291eabf3e7e0ff1d060539dd7")]
 [assembly: System.Reflection.AssemblyProductAttribute("QualiTrack")]
 [assembly: System.Reflection.AssemblyTitleAttribute("QualiTrack")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
