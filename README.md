@@ -332,11 +332,3 @@ Checklist
 - **Repository Pattern:** Belum diimplementasi — controller langsung akses DbContext. Bisa direfactor di sprint berikutnya
 
 ---
-
-## Tim
-
-| Role | Nama |
-|---|---|
-| Backend | Dika |
-| Mobile | - |
-| UI/UX | - |
