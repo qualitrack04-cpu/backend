@@ -15,3 +15,11 @@ public record AuthResponse(
     string Role,
     string FullName
 );
+
+public record UpdateCapaRequest(
+    string RootCause,
+    string CorrectiveAction,
+    string? PreventiveAction,
+    DateOnly Deadline,
+    Guid? PicId
+);

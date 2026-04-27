@@ -2,12 +2,12 @@ public class CAPA
 {
     public Guid Id { get; set; }
     public Guid FindingId { get; set; }
-    public Finding Finding { get; set; } = null!;
+    public Finding? Finding { get; set; }
     public string RootCause { get; set; } = string.Empty;
     public string CorrectiveAction { get; set; } = string.Empty;
     public string? PreventiveAction { get; set; }
     public Guid PicId { get; set; }
-    public User Pic { get; set; } = null!;
+    public User? Pic { get; set; }
     public DateOnly Deadline { get; set; }
     public CAPAStatus Status { get; set; } = CAPAStatus.Open;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
