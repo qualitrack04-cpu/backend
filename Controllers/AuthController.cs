@@ -1,9 +1,15 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using QualiTrack.Data;
+using QualiTrack.DTOs;
+using QualiTrack.Models;
+
+namespace QualiTrack.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -53,6 +59,18 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
 
         var token = GenerateJwt(user);
         return Ok(new AuthResponse(token, user.Role, user.FullName));
+    }
+
+    [HttpGet("whoami")]
+    [Authorize]
+    public IActionResult WhoAmI()
+    {
+        return Ok(new
+        {
+            isAuthenticated = User.Identity?.IsAuthenticated ?? false,
+            name = User.Identity?.Name,
+            claims = User.Claims.Select(c => new { c.Type, c.Value })
+        });
     }
 
     [HttpPost("logout")]

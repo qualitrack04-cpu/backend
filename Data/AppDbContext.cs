@@ -1,4 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using QualiTrack.Models;
+using QualiTrack.DTOs;
+
+namespace QualiTrack.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {

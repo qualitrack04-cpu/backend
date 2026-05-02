@@ -1,4 +1,6 @@
-// Models/Checklist.cs
+using QualiTrack.Models;
+
+namespace QualiTrack.Models;
 
 public class Checklist
 {

@@ -1,50 +1,130 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QualiTrack.Data;
+using QualiTrack.DTOs;
+using QualiTrack.Filters;
+using QualiTrack.Models;
+
+namespace QualiTrack.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuditPlanController(AppDbContext db) : ControllerBase
+[Authorize]
+[ValidateModelAttribute]
+public class AuditPlanController : ControllerBase
 {
+    private readonly AppDbContext _db;
+    
+    public AuditPlanController(AppDbContext db)
+    {
+        _db = db;
+    }
+
     [HttpGet]
+    [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> GetAll()
-        => Ok(await db.AuditPlans.Include(a => a.Schedules).ToListAsync());
+    {
+        var plans = await _db.AuditPlans
+            .Include(a => a.Schedules)
+            .OrderByDescending(a => a.CreatedAt)
+            .ToListAsync();
+        
+        return Ok(new { message = "Data audit plan berhasil diambil", total = plans.Count, data = plans });
+    }
 
     [HttpGet("{id}")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var plan = await db.AuditPlans.Include(a => a.Schedules).FirstOrDefaultAsync(a => a.Id == id);
-        return plan is null ? NotFound() : Ok(plan);
+        var plan = await _db.AuditPlans
+            .Include(a => a.Schedules)
+            .FirstOrDefaultAsync(a => a.Id == id);
+        
+        if (plan is null)
+            return NotFound(new { message = $"Audit plan dengan ID {id} tidak ditemukan", id = id });
+        
+        return Ok(new { message = "Data audit plan ditemukan", data = plan });
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(AuditPlan plan)
+    [Authorize(Roles = "Admin,QualityManager")]
+    public async Task<IActionResult> Create([FromBody] CreateAuditPlanDto planDto)
     {
-        plan.Id = Guid.NewGuid();
-        plan.CreatedAt = DateTime.UtcNow;
-        db.AuditPlans.Add(plan);
-        await db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = plan.Id }, plan);
+        var plan = new AuditPlan
+        {
+            Id = Guid.NewGuid(),
+            Title = planDto.Title,
+            Year = planDto.Year,
+            Standard = planDto.Standard,
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        if (planDto.Schedules is not null)
+        {
+            plan.Schedules = planDto.Schedules.Select(scheduleDto => new AuditSchedule
+            {
+                Id = Guid.NewGuid(),
+                ClauseRef = scheduleDto.ClauseRef,
+                AuditorId = scheduleDto.AuditorId,
+                ScheduledDate = scheduleDto.ScheduledDate,
+                Department = scheduleDto.Department,
+                AuditPlan = plan
+            }).ToList();
+        }
+
+        _db.AuditPlans.Add(plan);
+        await _db.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetById), new { id = plan.Id }, new { message = "Audit plan berhasil dibuat", data = plan });
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, AuditPlan updated)
+    [Authorize(Roles = "Admin,QualityManager")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAuditPlanDto updatedPlanDto)
     {
-        var plan = await db.AuditPlans.FindAsync(id);
-        if (plan is null) return NotFound();
-        plan.Title = updated.Title;
-        plan.Year = updated.Year;
-        plan.Standard = updated.Standard;
-        await db.SaveChangesAsync();
-        return NoContent();
+        var plan = await _db.AuditPlans
+            .Include(a => a.Schedules)
+            .FirstOrDefaultAsync(a => a.Id == id);
+        
+        if (plan is null)
+            return NotFound(new { message = $"Audit plan dengan ID {id} tidak ditemukan", id = id });
+        
+        plan.Title = updatedPlanDto.Title;
+        plan.Year = updatedPlanDto.Year;
+        plan.Standard = updatedPlanDto.Standard;
+
+        if (updatedPlanDto.Schedules is not null)
+        {
+            _db.AuditSchedules.RemoveRange(plan.Schedules);
+            plan.Schedules = updatedPlanDto.Schedules.Select(scheduleDto => new AuditSchedule
+            {
+                Id = Guid.NewGuid(),
+                ClauseRef = scheduleDto.ClauseRef,
+                AuditorId = scheduleDto.AuditorId,
+                ScheduledDate = scheduleDto.ScheduledDate,
+                Department = scheduleDto.Department,
+                AuditPlan = plan
+            }).ToList();
+        }
+        
+        await _db.SaveChangesAsync();
+        
+        return Ok(new { message = "Audit plan berhasil diupdate", data = plan });
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var plan = await db.AuditPlans.FindAsync(id);
-        if (plan is null) return NotFound();
-        db.AuditPlans.Remove(plan);
-        await db.SaveChangesAsync();
-        return NoContent();
+        var plan = await _db.AuditPlans.FindAsync(id);
+        
+        if (plan is null)
+            return NotFound(new { message = $"Audit plan dengan ID {id} tidak ditemukan", id = id });
+        
+        _db.AuditPlans.Remove(plan);
+        await _db.SaveChangesAsync();
+        
+        return Ok(new { message = "Audit plan berhasil dihapus", id = id });
     }
 }

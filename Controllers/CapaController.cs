@@ -1,5 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QualiTrack.Data;
+using QualiTrack.Models;
+using QualiTrack.DTOs;
+
+namespace QualiTrack.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
