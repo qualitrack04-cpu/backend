@@ -1,3 +1,7 @@
+using QualiTrack.Models;
+
+namespace QualiTrack.Models;
+
 public class AuditResponse
 {
     public Guid Id { get; set; }

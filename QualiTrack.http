@@ -4,3 +4,4 @@ GET {{QualiTrack_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+GET {}

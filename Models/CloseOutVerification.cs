@@ -1,4 +1,5 @@
-// Models/CloseOutVerification.cs
+using QualiTrack.Models;
+namespace QualiTrack.Models;
 
 public class CloseOutVerification
 {

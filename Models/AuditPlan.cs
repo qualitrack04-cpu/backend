@@ -1,4 +1,6 @@
-// Models/AuditPlan.cs
+using QualiTrack.Models;
+
+namespace QualiTrack.Models;
 
 public class AuditPlan
 {
