@@ -67,7 +67,7 @@ public class AuditPlanController : ControllerBase
                 Id = Guid.NewGuid(),
                 ClauseRef = scheduleDto.ClauseRef,
                 AuditorId = scheduleDto.AuditorId,
-                ScheduledDate = scheduleDto.ScheduledDate,
+                ScheduledDate = scheduleDto.ScheduledDate!.Value,
                 Department = scheduleDto.Department,
                 AuditPlan = plan
             }).ToList();
@@ -102,7 +102,7 @@ public class AuditPlanController : ControllerBase
                 Id = Guid.NewGuid(),
                 ClauseRef = scheduleDto.ClauseRef,
                 AuditorId = scheduleDto.AuditorId,
-                ScheduledDate = scheduleDto.ScheduledDate,
+                ScheduledDate = scheduleDto.ScheduledDate!.Value,
                 Department = scheduleDto.Department,
                 AuditPlan = plan
             }).ToList();

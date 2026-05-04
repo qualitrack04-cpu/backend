@@ -20,13 +20,28 @@ public class CreateAuditPlanDto
 
 public class CreateScheduleDto
 {
-    [Required]
+    [Required(ErrorMessage = "ClauseRef wajib diisi")]
     public string ClauseRef { get; set; } = string.Empty;
     
-    [Required]
+    [Required(ErrorMessage = "AuditorId wajib diisi")]
+    [NotEmptyGuid(ErrorMessage = "AuditorId tidak boleh kosong")]
     public Guid AuditorId { get; set; }
     
-    public DateOnly ScheduledDate { get; set; }
+    [Required(ErrorMessage = "ScheduledDate wajib diisi")]
+    public DateOnly? ScheduledDate { get; set; }
     
+    [Required(ErrorMessage = "Department wajib diisi")]
+    [StringLength(100, ErrorMessage = "Department maksimal 100 karakter")]
     public string Department { get; set; } = string.Empty;
+}
+
+public class NotEmptyGuidAttribute : ValidationAttribute
+{
+    protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+    {
+        if (value is Guid guid && guid != Guid.Empty)
+            return ValidationResult.Success;
+
+        return new ValidationResult(ErrorMessage ?? $"{validationContext.DisplayName} tidak boleh kosong.");
+    }
 }
