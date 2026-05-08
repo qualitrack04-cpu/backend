@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;  // ← TAMBAHKAN INI!
+using System.ComponentModel.DataAnnotations;  
 
 namespace QualiTrack.Models;
 
@@ -17,7 +17,7 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "Role wajib diisi")]
-    public string Role { get; set; } = "Auditee";
+    public string Role { get; set; } = "QualityManager";
     
     public string Status { get; set; } = "Active";
     
