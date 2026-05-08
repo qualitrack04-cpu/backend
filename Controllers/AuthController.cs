@@ -20,15 +20,12 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest req)
     {
-        // Validasi role
         if (!ValidRoles.Contains(req.Role))
             return BadRequest("Role tidak valid. Pilih: QualityManager, Auditor, Auditee, Admin");
 
-        // Validasi password
         if (req.Password.Length < 6)
             return BadRequest("Password minimal 6 karakter");
 
-        // Cek email unik
         if (await db.Users.AnyAsync(u => u.Email == req.Email))
             return BadRequest("Email sudah terdaftar");
 
@@ -67,8 +64,8 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
     {
         return Ok(new
         {
-            isAuthenticated = User.Identity?.IsAuthenticated ?? false,
-            name = User.Identity?.Name,
+            isAuthenticated = User.Identity != null && User.Identity.IsAuthenticated,
+            name = User.Identity != null ? User.Identity.Name : null,
             claims = User.Claims.Select(c => new { c.Type, c.Value })
         });
     }
@@ -76,8 +73,26 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        // JWT stateless — logout ditangani di sisi client dengan hapus token
         return Ok(new { message = "Logout berhasil" });
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest req)
+    {
+        if (req.NewPassword.Length < 6)
+            return BadRequest(new { message = "Password minimal 6 karakter" });
+
+        if (string.Equals(req.NewPassword, req.ConfirmPassword) == false)
+            return BadRequest(new { message = "Password dan konfirmasi password tidak sama" });
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
+        if (user is null)
+            return NotFound(new { message = "Email tidak ditemukan" });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "Password berhasil direset" });
     }
 
     private string GenerateJwt(User user)

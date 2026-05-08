@@ -23,3 +23,9 @@ public record UpdateCapaRequest(
     DateOnly Deadline,
     Guid? PicId
 );
+
+public record ForgotPasswordRequest(
+    string Email,
+    string NewPassword,
+    string ConfirmPassword
+);
