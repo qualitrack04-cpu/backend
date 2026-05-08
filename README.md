@@ -14,8 +14,9 @@ Dibangun dengan **ASP.NET Core 10** + **Entity Framework Core** + **PostgreSQL**
 | ORM | Entity Framework Core 10 |
 | Database | PostgreSQL (lokal / Supabase) |
 | Auth | JWT Bearer Token |
-| Password | BCrypt.Net |
-| Docs | Swagger / OpenAPI |
+| Password Hashing | BCrypt.Net |
+| API Docs | Swagger / OpenAPI |
+| Environment | DotNetEnv |
 
 ---
 
@@ -23,34 +24,40 @@ Dibangun dengan **ASP.NET Core 10** + **Entity Framework Core** + **PostgreSQL**
 
 ```
 QualiTrack/
-├── Controllers/        # Endpoint API (kasir - terima & balas request)
-│   ├── AuthController.cs
-│   ├── AuditPlanController.cs
-│   ├── FindingController.cs
-│   ├── CapaController.cs
-│   ├── AuditSessionController.cs
-│   ├── ChecklistController.cs
-│   └── UploadController.cs
-├── Models/             # Entity class (struktur tabel database)
+├── Controllers/
+│   ├── AuthController.cs           # Register, Login, Logout, Forgot Password
+│   ├── AuditPlanController.cs      # CRUD Audit Plan + Role-based access
+│   ├── FindingController.cs        # CRUD Finding + filter status/kategori/tanggal
+│   ├── CapaController.cs           # CRUD CAPA + actions + closeout + overdue
+│   ├── AuditSessionController.cs   # CRUD Audit Session
+│   ├── ChecklistController.cs      # CRUD Checklist + filter + items endpoint
+│   └── UploadController.cs         # Upload foto/dokumen evidence
+├── Models/
 │   ├── User.cs
-│   ├── AuditPlan.cs
+│   ├── AuditPlan.cs                # + field Priority (Low/Medium/High/Critical)
 │   ├── AuditSchedule.cs
 │   ├── AuditSession.cs
 │   ├── AuditResponse.cs
-│   ├── Checklist.cs
+│   ├── Checklist.cs                # + field Department
 │   ├── ChecklistItem.cs
 │   ├── Finding.cs
 │   ├── CAPA.cs
 │   ├── CAPAAction.cs
 │   ├── CloseOutVerification.cs
 │   └── EvidenceFile.cs
-├── DTOs/               # Request/Response object
-│   └── AuthDtos.cs
+├── DTOs/
+│   ├── AuthDtos.cs                 # RegisterRequest, LoginRequest, AuthResponse, ForgotPasswordRequest
+│   └── UpdateCapaRequest.cs
 ├── Data/
-│   └── AppDbContext.cs # Pintu masuk ke database
-├── Migrations/         # Catatan perubahan schema database
-├── uploads/            # File evidence yang diupload
-└── Program.cs          # Setup & konfigurasi aplikasi
+│   ├── AppDbContext.cs
+│   └── DbSeeder.cs                 # Seed data checklist template per standar & departemen
+├── Filters/
+│   └── ValidateModelAttribute.cs
+├── Middlewares/
+│   └── GlobalExceptionMiddleware.cs
+├── Migrations/                     # EF Core migrations
+├── uploads/                        # File evidence yang diupload
+└── Program.cs
 ```
 
 ---
@@ -63,13 +70,13 @@ QualiTrack/
 
 ### Setup
 
-**1. Clone repo dan masuk folder**
+**1. Clone repo**
 ```bash
 git clone <repo-url>
 cd QualiTrack
 ```
 
-**2. Sesuaikan koneksi database di `appsettings.json`**
+**2. Sesuaikan `appsettings.json`**
 ```json
 {
   "ConnectionStrings": {
@@ -93,6 +100,8 @@ dotnet ef database update
 dotnet run
 ```
 
+> Saat pertama jalan, aplikasi otomatis seed 4 template checklist ke database.
+
 **5. Buka Swagger**
 ```
 http://localhost:5146/swagger
@@ -104,11 +113,13 @@ http://localhost:5146/swagger
 
 ### 🔐 Authentication
 
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| POST | `/api/Auth/register` | Daftar user baru |
-| POST | `/api/Auth/login` | Login, dapat JWT token |
-| POST | `/api/Auth/logout` | Logout (hapus token di client) |
+| Method | Endpoint | Deskripsi | Auth |
+|---|---|---|---|
+| POST | `/api/Auth/register` | Daftar user baru | ❌ |
+| POST | `/api/Auth/login` | Login, dapat JWT token | ❌ |
+| POST | `/api/Auth/logout` | Logout | ❌ |
+| POST | `/api/Auth/forgot-password` | Reset password | ❌ |
+| GET | `/api/Auth/whoami` | Cek info user dari token | ✅ |
 
 **Register:**
 ```json
@@ -138,23 +149,36 @@ Response:
   "fullName": "Dika Admin"
 }
 ```
-> Token dipakai di header `Authorization: Bearer <token>` untuk endpoint yang butuh auth.
+
+**Forgot Password:**
+```json
+POST /api/Auth/forgot-password
+{
+  "email": "dika@qualitrack.com",
+  "newPassword": "newpass123",
+  "confirmPassword": "newpass123"
+}
+```
+
+> Token JWT dipakai di header `Authorization: Bearer <token>` untuk semua endpoint yang butuh auth.
 
 ---
 
 ### 📋 Audit Plan
 
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| GET | `/api/AuditPlan` | List semua audit plan |
-| GET | `/api/AuditPlan/{id}` | Detail audit plan |
-| POST | `/api/AuditPlan` | Buat audit plan baru |
-| PUT | `/api/AuditPlan/{id}` | Update audit plan |
-| DELETE | `/api/AuditPlan/{id}` | Hapus audit plan |
+| Method | Endpoint | Deskripsi | Role |
+|---|---|---|---|
+| GET | `/api/AuditPlan` | List semua audit plan | Admin, QualityManager, Auditor |
+| GET | `/api/AuditPlan/{id}` | Detail audit plan | Admin, QualityManager, Auditor |
+| POST | `/api/AuditPlan` | Buat audit plan baru | Admin, QualityManager |
+| PUT | `/api/AuditPlan/{id}` | Update audit plan | Admin, QualityManager |
+| DELETE | `/api/AuditPlan/{id}` | Hapus audit plan | Admin |
 
 **Buat Audit Plan:**
 ```json
 POST /api/AuditPlan
+Authorization: Bearer <token>
+
 {
   "title": "Audit ISO 9001 Q1 2026",
   "year": 2026,
@@ -163,26 +187,39 @@ POST /api/AuditPlan
 }
 ```
 
+**Priority:** `Low`, `Medium`, `High`, `Critical` (default: `Medium`)
+
+Response:
+```json
+{
+  "message": "Audit plan berhasil dibuat",
+  "data": { ... }
+}
+```
+
 ---
 
 ### 🔍 Finding
 
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| GET | `/api/Finding` | List semua finding (bisa filter) |
-| GET | `/api/Finding/{id}` | Detail finding |
-| POST | `/api/Finding` | Catat finding baru |
-| PATCH | `/api/Finding/{id}/status` | Update status finding |
-| DELETE | `/api/Finding/{id}` | Hapus finding |
+| Method | Endpoint | Deskripsi | Auth |
+|---|---|---|---|
+| GET | `/api/Finding` | List semua finding | ✅ |
+| GET | `/api/Finding/{id}` | Detail finding | ✅ |
+| POST | `/api/Finding` | Catat finding baru | ✅ |
+| PATCH | `/api/Finding/{id}/status` | Update status finding | ✅ |
+| DELETE | `/api/Finding/{id}` | Hapus finding | ✅ |
 
 **Filter Finding:**
 ```
-GET /api/Finding?status=Open&category=MajorNC
+GET /api/Finding?status=Open
+GET /api/Finding?category=MajorNC
+GET /api/Finding?from=2026-01-01&to=2026-12-31
+GET /api/Finding?status=Open&category=MajorNC&from=2026-01-01
 ```
 
 **Kategori:** `MajorNC`, `MinorNC`, `Observation`, `OFI`
 
-**Status:** `Open`, `InProgress`, `Closed`
+**Status:** `Open` → `InProgress` → `Closed`
 
 **Buat Finding:**
 ```json
@@ -195,7 +232,7 @@ POST /api/Finding
 ```
 
 **Update Status:**
-```json
+```
 PATCH /api/Finding/{id}/status
 "InProgress"
 ```
@@ -204,17 +241,17 @@ PATCH /api/Finding/{id}/status
 
 ### ⚙️ CAPA
 
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| GET | `/api/Capa` | List semua CAPA (bisa filter) |
-| GET | `/api/Capa/{id}` | Detail CAPA |
-| GET | `/api/Capa/overdue` | CAPA yang sudah melewati deadline |
-| POST | `/api/Capa/finding/{findingId}` | Buat CAPA dari finding |
-| PUT | `/api/Capa/{id}` | Update CAPA |
-| PATCH | `/api/Capa/{id}/status` | Update status CAPA |
-| POST | `/api/Capa/{id}/actions` | Tambah progress action |
-| POST | `/api/Capa/{id}/closeout` | Verifikasi close out |
-| DELETE | `/api/Capa/{id}` | Hapus CAPA |
+| Method | Endpoint | Deskripsi | Auth |
+|---|---|---|---|
+| GET | `/api/Capa` | List semua CAPA | ✅ |
+| GET | `/api/Capa/{id}` | Detail CAPA | ✅ |
+| GET | `/api/Capa/overdue` | CAPA yang melewati deadline | ✅ |
+| POST | `/api/Capa/finding/{findingId}` | Buat CAPA dari finding | ✅ |
+| PUT | `/api/Capa/{id}` | Update CAPA | ✅ |
+| PATCH | `/api/Capa/{id}/status` | Update status CAPA | ✅ |
+| POST | `/api/Capa/{id}/actions` | Tambah progress action | ✅ |
+| POST | `/api/Capa/{id}/closeout` | Verifikasi close out | ✅ |
+| DELETE | `/api/Capa/{id}` | Hapus CAPA | ✅ |
 
 **Buat CAPA:**
 ```json
@@ -247,16 +284,46 @@ POST /api/Capa/{id}/closeout
   "verifiedById": "user-id"
 }
 ```
+
 > Close out otomatis mengubah status Finding terkait menjadi `Closed`
+
+---
+
+### ✅ Checklist
+
+| Method | Endpoint | Deskripsi | Auth |
+|---|---|---|---|
+| GET | `/api/Checklist` | List semua checklist | ❌ |
+| GET | `/api/Checklist/{id}` | Detail checklist | ❌ |
+| GET | `/api/Checklist/{id}/items` | Items checklist urut by orderIndex | ❌ |
+| POST | `/api/Checklist` | Buat checklist baru | ❌ |
+| DELETE | `/api/Checklist/{id}` | Hapus checklist | ❌ |
+
+**Filter Checklist:**
+```
+GET /api/Checklist?standard=ISO9001
+GET /api/Checklist?department=Warehouse
+GET /api/Checklist?standard=ISO9001&department=Warehouse
+```
+
+**Template yang sudah tersedia (seed data):**
+
+| Template | Standard | Departemen | Jumlah Item |
+|---|---|---|---|
+| ISO 9001 - Warehouse | ISO9001 | Warehouse | 5 |
+| ISO 14001 - Warehouse | ISO14001 | Warehouse | 5 |
+| ISO 9001 - Produksi | ISO9001 | Produksi | 5 |
+| ISO 14001 - Produksi | ISO14001 | Produksi | 5 |
 
 ---
 
 ### 📁 Upload File Evidence
 
-| Method | Endpoint | Deskripsi |
+| Method | Endpoint | Deskripsi 
 |---|---|---|
-| POST | `/api/Upload/finding/{findingId}` | Upload foto/dokumen untuk finding |
-| POST | `/api/Upload/capa-action/{actionId}` | Upload foto/dokumen untuk CAPA action |
+| POST | `/api/Upload/finding/{findingId}` | Upload foto/dokumen untuk finding 
+| POST | `/api/Upload/capa-action/{actionId}` | Upload foto/dokumen untuk CAPA action 
+| GET | `/api/Upload/finding/{findingId}` | List file evidence finding 
 
 **Upload:**
 ```bash
@@ -282,21 +349,25 @@ Response:
 ## Alur Lengkap Audit
 
 ```
-1. Buat Audit Plan
+1. Register & Login → dapat JWT token
         ↓
-2. Buat AuditSession (field audit)
+2. Buat Audit Plan (dengan Priority)
         ↓
-3. Isi Checklist + foto evidence
+3. Pilih Checklist template (filter by standard & department)
         ↓
-4. Catat Finding (MajorNC / MinorNC / Obs / OFI)
+4. Jalankan AuditSession
         ↓
-5. Buat CAPA dari Finding
+5. Isi AuditResponse per ChecklistItem + upload foto evidence
         ↓
-6. Tambah CAPA Actions (progress update)
+6. Catat Finding (MajorNC / MinorNC / Observation / OFI)
         ↓
-7. Close Out + verifikasi efektivitas
+7. Buat CAPA dari Finding
         ↓
-8. Finding & CAPA otomatis Closed ✅
+8. Tambah CAPA Actions (progress update)
+        ↓
+9. Close Out + verifikasi efektivitas
+        ↓
+10. Finding & CAPA otomatis Closed ✅
 ```
 
 ---
@@ -307,7 +378,7 @@ Response:
 User
  └── CAPA (sebagai PIC)
 
-AuditPlan
+AuditPlan (+ Priority)
  └── AuditSchedule (auditor per klausul)
       └── AuditSession
            ├── AuditResponse (jawaban checklist)
@@ -318,17 +389,51 @@ AuditPlan
                      │    └── EvidenceFile
                      └── CloseOutVerification
 
-Checklist
+Checklist (+ Department)
  └── ChecklistItem
 ```
 
 ---
 
-## Catatan Pengembangan
+## Migrations
 
-- **Local DB:** Saat ini menggunakan PostgreSQL lokal. Untuk production ganti connection string ke Supabase di `appsettings.json`
-- **Auth:** Endpoint belum semuanya di-protect dengan `[Authorize]` — perlu ditambahkan di sprint berikutnya
-- **File Storage:** File tersimpan di folder `uploads/` lokal. Untuk production perlu migrasi ke Supabase Storage
-- **Repository Pattern:** Belum diimplementasi — controller langsung akses DbContext. Bisa direfactor di sprint berikutnya
+| Migration | Deskripsi |
+|---|---|
+| `InitialCreate` | Schema awal semua tabel |
+| `AddUserTable` | Tabel User untuk auth |
+| `MakeSessionIdNullable` | SessionId di Finding jadi nullable |
+| `AddAuditPriority` | Field Priority di AuditPlan |
+| `AddDepartmentToChecklist` | Field Department di Checklist |
 
 ---
+
+
+## Catatan Pengembangan
+
+- **Local DB:** Saat ini pakai PostgreSQL lokal. Untuk production ganti connection string ke Supabase di `appsettings.json`
+- **File Storage:** File tersimpan di folder `uploads/` lokal. Sprint 2 akan migrasi ke Supabase Storage
+- **Forgot Password:** Saat ini reset langsung via API tanpa email. Sprint 3 akan tambah email SMTP
+- **User Management:** CRUD user belum ada, direncanakan sprint berikutnya sesuai feedback stakeholder
+- **Repository Pattern:** Belum diimplementasi, bisa direfactor sprint berikutnya
+
+---
+
+## Sprint Progress
+
+| Fitur | Status | Sprint |
+|---|---|---|
+| Authentication (register, login, logout, forgot password) | ✅ Done | Sprint 1 |
+| Audit Plan CRUD + Priority | ✅ Done | Sprint 1 |
+| Finding CRUD + filter + logic status | ✅ Done | Sprint 1 |
+| CAPA CRUD + actions + closeout + overdue | ✅ Done | Sprint 1 |
+| Checklist template seed data | ✅ Done | Sprint 1 |
+| Upload file evidence | ✅ Done | Sprint 1 |
+| Role-based access control | ✅ Done | Sprint 1 |
+| Documentation upload ke cloud storage | 🔜 Sprint 2 |
+| Dashboard KPI API | 🔜 Sprint 2/3 |
+| User Management CRUD | 🔜 Sprint 2 |
+| Forgot password via email | 🔜 Sprint 3 |
+| Reporting PDF | 🔜 Sprint 4 |
+
+---
+
