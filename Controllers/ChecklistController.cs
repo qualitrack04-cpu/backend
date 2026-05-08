@@ -46,4 +46,23 @@ public class ChecklistController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync();
         return NoContent();
     }
+
+    [HttpGet("{id}/items")]
+    public async Task<IActionResult> GetItems(Guid id)
+    {
+        var checklist = await db.Checklists
+            .Include(c => c.Items.OrderBy(i => i.OrderIndex))
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (checklist is null) return NotFound(new { message = "Checklist tidak ditemukan" });
+
+        return Ok(new {
+            checklistId = checklist.Id,
+            title = checklist.Title,
+            standard = checklist.Standard,
+            department = checklist.Department,
+            totalItems = checklist.Items.Count,
+            items = checklist.Items
+        });
+    }
 }
