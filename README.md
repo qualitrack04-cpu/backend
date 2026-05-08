@@ -411,10 +411,9 @@ Checklist (+ Department)
 ## Catatan Pengembangan
 
 - **Local DB:** Saat ini pakai PostgreSQL lokal. Untuk production ganti connection string ke Supabase di `appsettings.json`
-- **File Storage:** File tersimpan di folder `uploads/` lokal. Sprint 2 akan migrasi ke Supabase Storage
-- **Forgot Password:** Saat ini reset langsung via API tanpa email. Sprint 3 akan tambah email SMTP
-- **User Management:** CRUD user belum ada, direncanakan sprint berikutnya sesuai feedback stakeholder
-- **Repository Pattern:** Belum diimplementasi, bisa direfactor sprint berikutnya
+- **File Storage:** File tersimpan di folder `uploads/` lokal.
+- **Forgot Password:** Saat ini reset langsung via API tanpa email. 
+- **User Management:** CRUD user belum ada.
 
 ---
 
@@ -429,11 +428,6 @@ Checklist (+ Department)
 | Checklist template seed data | ✅ Done | Sprint 1 |
 | Upload file evidence | ✅ Done | Sprint 1 |
 | Role-based access control | ✅ Done | Sprint 1 |
-| Documentation upload ke cloud storage | 🔜 Sprint 2 |
-| Dashboard KPI API | 🔜 Sprint 2/3 |
-| User Management CRUD | 🔜 Sprint 2 |
-| Forgot password via email | 🔜 Sprint 3 |
-| Reporting PDF | 🔜 Sprint 4 |
 
 ---
 
