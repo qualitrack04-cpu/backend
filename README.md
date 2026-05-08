@@ -34,7 +34,7 @@ QualiTrack/
 │   └── UploadController.cs         # Upload foto/dokumen evidence
 ├── Models/
 │   ├── User.cs
-│   ├── AuditPlan.cs                # + field Priority (Low/Medium/High/Critical)
+│   ├── AuditPlan.cs                # + field Priority (Common, Priority)
 │   ├── AuditSchedule.cs
 │   ├── AuditSession.cs
 │   ├── AuditResponse.cs
