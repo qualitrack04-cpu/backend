@@ -7,8 +7,22 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ===============================================================================
+// 1. DATABASE
+// ===============================================================================
+var connectionString = builder.Configuration.GetConnectionString("Supabase")
+    ?? throw new InvalidOperationException("Connection string 'Supabase' not found.");
+
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Supabase")));
+    opt.UseNpgsql(connectionString));
+
+// ===============================================================================
+// 2. JWT AUTH 
+// ===============================================================================
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var jwtKey = jwtSection["Key"]!;
+var jwtIssuer = jwtSection["Issuer"]!;
+var jwtAudience = jwtSection["Audience"]!;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
