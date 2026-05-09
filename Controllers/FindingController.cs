@@ -1,16 +1,21 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QualiTrack.Data;
-using QualiTrack.Models;
 using QualiTrack.DTOs;
+using QualiTrack.Filters;
+using QualiTrack.Models;
 
 namespace QualiTrack.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
+[ValidateModelAttribute]
 public class FindingController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,auditee")]
     public async Task<IActionResult> GetAll([FromQuery] FindingStatus? status, [FromQuery] FindingCategory? category)
     {
         var query = db.Findings.Include(f => f.Capa).AsQueryable();
@@ -20,6 +25,7 @@ public class FindingController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,auditee")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var finding = await db.Findings.Include(f => f.Capa).FirstOrDefaultAsync(f => f.Id == id);
@@ -27,17 +33,27 @@ public class FindingController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(Finding finding)
+    [Authorize(Roles = "Admin,QualityManager,Auditor")]
+    public async Task<IActionResult> Create([FromBody] CreateFindingRequest req)
     {
-        finding.Id = Guid.NewGuid();
-        finding.FoundAt = DateTime.UtcNow;
-        finding.Status = FindingStatus.Open;
+        var finding = new Finding
+        {
+            Id = Guid.NewGuid(),
+            SessionId = req.SessionId,
+            Category = req.Category!.Value,
+            Description = req.Description,
+            ClauseRef = req.ClauseRef,
+            FoundAt = DateTime.UtcNow,
+            Status = FindingStatus.Open
+        };
+
         db.Findings.Add(finding);
         await db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = finding.Id }, finding);
     }
 
     [HttpPatch("{id}/status")]
+    [Authorize(Roles = "Admin,QualityManager")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] FindingStatus status)
     {
         var finding = await db.Findings.FindAsync(id);
@@ -48,6 +64,7 @@ public class FindingController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var finding = await db.Findings.FindAsync(id);
