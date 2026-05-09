@@ -1,16 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using QualiTrack.Data;
 using QualiTrack.Models;
 using QualiTrack.DTOs;
+using QualiTrack.Filters;
 
 namespace QualiTrack.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
+[ValidateModelAttribute]
 public class CapaController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> GetAll([FromQuery] CAPAStatus? status)
     {
         var query = db.CAPAs
@@ -22,6 +27,7 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("overdue")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> GetOverdue()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -33,6 +39,7 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var capa = await db.CAPAs
@@ -43,14 +50,29 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("finding/{findingId}")]
-    public async Task<IActionResult> Create(Guid findingId, CAPA capa)
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
+    public async Task<IActionResult> Create(Guid findingId, [FromBody] CreateCapaRequest req)
     {
         var finding = await db.Findings.FindAsync(findingId);
         if (finding is null) return NotFound("Finding tidak ditemukan");
-        capa.Id = Guid.NewGuid();
-        capa.FindingId = findingId;
-        capa.Status = CAPAStatus.Open;
-        capa.CreatedAt = DateTime.UtcNow;
+        if (!req.Deadline.HasValue)
+            return BadRequest(new { message = "Deadline wajib diisi" });
+        if (!req.PicId.HasValue || req.PicId == Guid.Empty)
+            return BadRequest(new { message = "PIC harus diisi dan bukan Guid kosong" });
+
+        var capa = new CAPA
+        {
+            Id = Guid.NewGuid(),
+            FindingId = findingId,
+            RootCause = req.RootCause,
+            CorrectiveAction = req.CorrectiveAction,
+            PreventiveAction = req.PreventiveAction,
+            PicId = req.PicId.Value,
+            Deadline = req.Deadline.Value,
+            Status = CAPAStatus.Open,
+            CreatedAt = DateTime.UtcNow
+        };
+
         db.CAPAs.Add(capa);
         finding.Status = FindingStatus.InProgress;
         await db.SaveChangesAsync();
@@ -58,21 +80,29 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, UpdateCapaRequest req)
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCapaRequestDto req)
     {
         var capa = await db.CAPAs.FindAsync(id);
         if (capa is null) return NotFound();
+        if (!req.Deadline.HasValue)
+            return BadRequest(new { message = "Deadline wajib diisi" });
+        if (req.PicId.HasValue && req.PicId == Guid.Empty)
+            return BadRequest(new { message = "PIC tidak boleh Guid kosong" });
+
         capa.RootCause = req.RootCause;
         capa.CorrectiveAction = req.CorrectiveAction;
         capa.PreventiveAction = req.PreventiveAction;
-        capa.Deadline = req.Deadline;
-        if (req.PicId.HasValue && req.PicId != Guid.Empty)
-            capa.PicId = req.PicId!.Value;
+        capa.Deadline = req.Deadline.Value;
+        if (req.PicId.HasValue)
+            capa.PicId = req.PicId.Value;
+
         await db.SaveChangesAsync();
         return NoContent();
     }
 
     [HttpPatch("{id}/status")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] CAPAStatus status)
     {
         var capa = await db.CAPAs.FindAsync(id);
@@ -83,13 +113,23 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("{id}/actions")]
-    public async Task<IActionResult> AddAction(Guid id, CAPAAction action)
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
+    public async Task<IActionResult> AddAction(Guid id, [FromBody] AddCapaActionRequest req)
     {
         var capa = await db.CAPAs.FindAsync(id);
         if (capa is null) return NotFound();
-        action.Id = Guid.NewGuid();
-        action.CapaId = id;
-        action.DoneAt = DateTime.UtcNow;
+        if (!req.DoneById.HasValue || req.DoneById == Guid.Empty)
+            return BadRequest(new { message = "DoneById harus diisi dan bukan Guid kosong" });
+
+        var action = new CAPAAction
+        {
+            Id = Guid.NewGuid(),
+            CapaId = id,
+            Description = req.Description,
+            DoneById = req.DoneById.Value,
+            DoneAt = DateTime.UtcNow
+        };
+
         db.CAPAActions.Add(action);
         capa.Status = CAPAStatus.InProgress;
         await db.SaveChangesAsync();
@@ -97,22 +137,37 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("{id}/closeout")]
-    public async Task<IActionResult> CloseOut(Guid id, CloseOutVerification verification)
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
+    public async Task<IActionResult> CloseOut(Guid id, [FromBody] CloseOutVerificationRequest req)
     {
         var capa = await db.CAPAs.Include(c => c.Finding).FirstOrDefaultAsync(c => c.Id == id);
         if (capa is null) return NotFound();
-        verification.Id = Guid.NewGuid();
-        verification.CapaId = id;
-        verification.VerifiedAt = DateTime.UtcNow;
+        if (!req.IsEffective.HasValue)
+            return BadRequest(new { message = "IsEffective wajib diisi" });
+        if (!req.VerifiedById.HasValue || req.VerifiedById == Guid.Empty)
+            return BadRequest(new { message = "VerifiedById harus diisi dan bukan Guid kosong" });
+
+        var verification = new CloseOutVerification
+        {
+            Id = Guid.NewGuid(),
+            CapaId = id,
+            IsEffective = req.IsEffective.Value,
+            VerificationNotes = req.VerificationNotes,
+            VerifiedById = req.VerifiedById.Value,
+            VerifiedAt = DateTime.UtcNow
+        };
+
         db.CloseOutVerifications.Add(verification);
         capa.Status = CAPAStatus.Closed;
         if (capa.Finding is not null)
             capa.Finding.Status = FindingStatus.Closed;
+
         await db.SaveChangesAsync();
         return Ok(verification);
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var capa = await db.CAPAs.FindAsync(id);
