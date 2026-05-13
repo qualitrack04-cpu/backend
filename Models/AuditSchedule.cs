@@ -9,7 +9,8 @@ public class AuditSchedule
     public AuditPlan AuditPlan { get; set; } = null!;
     public string ClauseRef { get; set; } = string.Empty;
     public Guid AuditorId { get; set; }
-    public User Auditor { get; set; } = null!;
+    public User Auditor { get; set; }
+    public string AuditorName {get; set;} = string.Empty;
     public DateOnly ScheduledDate { get; set; }
     public string Department { get; set; } = string.Empty;
 }
