@@ -27,6 +27,7 @@ public class AuditPlanController : ControllerBase
     {
         var plans = await _db.AuditPlans
             .Include(a => a.Schedules)
+                .ThenInclude(s => s.Auditor)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
         
@@ -39,6 +40,7 @@ public class AuditPlanController : ControllerBase
     {
         var plan = await _db.AuditPlans
             .Include(a => a.Schedules)
+                .ThenInclude(s => s.Auditor)
             .FirstOrDefaultAsync(a => a.Id == id);
         
         if (plan is null)
