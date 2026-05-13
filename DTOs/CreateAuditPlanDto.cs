@@ -31,6 +31,8 @@ public class CreateScheduleDto
     [Required(ErrorMessage = "AuditorId wajib diisi")]
     [NotEmptyGuid(ErrorMessage = "AuditorId tidak boleh kosong")]
     public Guid AuditorId { get; set; }
+
+    public string AuditorName {get; set;} = string.Empty;
     
     [Required(ErrorMessage = "ScheduledDate wajib diisi")]
     public DateOnly? ScheduledDate { get; set; }

@@ -12,11 +12,12 @@ Dibangun dengan **ASP.NET Core 10** + **Entity Framework Core** + **PostgreSQL**
 |---|---|
 | Framework | ASP.NET Core 10 |
 | ORM | Entity Framework Core 10 |
-| Database | PostgreSQL (lokal / Supabase) |
+| Database | PostgreSQL (Railway) |
 | Auth | JWT Bearer Token |
 | Password Hashing | BCrypt.Net |
 | API Docs | Swagger / OpenAPI |
 | Environment | DotNetEnv |
+| Deployment | Railway |
 
 ---
 
@@ -47,6 +48,7 @@ QualiTrack/
 │   └── EvidenceFile.cs
 ├── DTOs/
 │   ├── AuthDtos.cs                 # RegisterRequest, LoginRequest, AuthResponse, ForgotPasswordRequest
+│   ├── AuditPlanDtos.cs            # CreateAuditPlanDto, UpdateAuditPlanDto, CreateScheduleDto
 │   └── UpdateCapaRequest.cs
 ├── Data/
 │   ├── AppDbContext.cs
@@ -106,6 +108,61 @@ dotnet run
 ```
 http://localhost:5146/swagger
 ```
+
+---
+
+## Deployment (Railway)
+
+Backend dan database di-deploy ke Railway.
+
+**Base URL Production:**
+```
+https://backendqualitrack-production.up.railway.app
+```
+
+**Environment Variables di Railway:**
+| Variable | Keterangan |
+|---|---|
+| `ConnectionStrings__Supabase` | Connection string ke PostgreSQL Railway |
+| `Jwt__Key` | Secret key JWT |
+| `Jwt__Issuer` | Issuer JWT |
+| `Jwt__Audience` | Audience JWT |
+
+**Catatan deployment:**
+- Database menggunakan `EnsureCreatedAsync()` saat startup untuk membuat tabel otomatis
+- Seed data checklist template dijalankan otomatis saat pertama deploy
+- Railway mendeteksi .NET 10 secara otomatis via `railpack`
+
+---
+
+## Integrasi Mobile
+
+Backend ini dirancang sebagai REST API untuk dikonsumsi mobile app (Flutter, React Native, dll).
+
+**Alur integrasi:**
+1. **Register/Login** → dapat JWT token
+2. **Simpan token** di local storage mobile
+3. **Setiap request** sertakan token di header:
+   ```
+   Authorization: Bearer <token>
+   ```
+4. Backend validasi token → proses → kirim response JSON
+
+**Contoh di Flutter dengan package `dio`:**
+```dart
+// Login
+final response = await dio.post(
+  'https://backendqualitrack-production.up.railway.app/api/Auth/login',
+  data: {'email': email, 'password': password},
+);
+final token = response.data['token'];
+
+// Request data dengan token
+dio.options.headers['Authorization'] = 'Bearer $token';
+final checklists = await dio.get('/api/Checklists');
+```
+
+> **Catatan:** Endpoint `/api/Auth/register` dan `/api/Auth/login` adalah POST. Membuka URL di browser akan menghasilkan HTTP 405 (Method Not Allowed) — ini normal, bukan error.
 
 ---
 
@@ -183,11 +240,22 @@ Authorization: Bearer <token>
   "title": "Audit ISO 9001 Q1 2026",
   "year": 2026,
   "standard": "ISO9001",
-  "schedules": []
+  "priority": "Common",
+  "description": "Audit kuartal pertama 2026",
+  "schedules": [
+    {
+      "clauseRef": "ISO9001 8.1",
+      "auditorId": "uuid-user-auditor",
+      "scheduledDate": "2026-06-15",
+      "department": "Warehouse"
+    }
+  ]
 }
 ```
 
-**Priority:** `Low`, `Medium`, `High`, `Critical` (default: `Medium`)
+> **Catatan:** `auditorId` adalah ID user yang memiliki role `Auditor`. Daftarkan user auditor terlebih dahulu via `/api/Auth/register` dengan role `Auditor`, lalu gunakan ID-nya di sini.
+
+**Priority:** `Common` (default), `Priority`
 
 Response:
 ```json
@@ -319,11 +387,11 @@ GET /api/Checklist?standard=ISO9001&department=Warehouse
 
 ### 📁 Upload File Evidence
 
-| Method | Endpoint | Deskripsi 
+| Method | Endpoint | Deskripsi |
 |---|---|---|
-| POST | `/api/Upload/finding/{findingId}` | Upload foto/dokumen untuk finding 
-| POST | `/api/Upload/capa-action/{actionId}` | Upload foto/dokumen untuk CAPA action 
-| GET | `/api/Upload/finding/{findingId}` | List file evidence finding 
+| POST | `/api/Upload/finding/{findingId}` | Upload foto/dokumen untuk finding |
+| POST | `/api/Upload/capa-action/{actionId}` | Upload foto/dokumen untuk CAPA action |
+| GET | `/api/Upload/finding/{findingId}` | List file evidence finding |
 
 **Upload:**
 ```bash
@@ -377,9 +445,10 @@ Response:
 ```
 User
  └── CAPA (sebagai PIC)
+ └── AuditSchedule (sebagai Auditor)
 
-AuditPlan (+ Priority)
- └── AuditSchedule (auditor per klausul)
+AuditPlan (+ Priority, Description)
+ └── AuditSchedule (auditor per klausul, per departemen)
       └── AuditSession
            ├── AuditResponse (jawaban checklist)
            │    └── EvidenceFile (foto)
@@ -407,13 +476,14 @@ Checklist (+ Department)
 
 ---
 
-
 ## Catatan Pengembangan
 
-- **Local DB:** Saat ini pakai PostgreSQL lokal. Untuk production ganti connection string ke Supabase di `appsettings.json`
-- **File Storage:** File tersimpan di folder `uploads/` lokal.
-- **Forgot Password:** Saat ini reset langsung via API tanpa email. 
-- **User Management:** CRUD user belum ada.
+- **Database:** PostgreSQL di Railway, tabel dibuat otomatis via `EnsureCreatedAsync` saat startup
+- **File Storage:** File tersimpan di folder `uploads/` lokal di server Railway
+- **Forgot Password:** Saat ini reset langsung via API tanpa email
+- **User Management:** CRUD user belum ada; tambah user via endpoint register
+- **AuditPriority:** Enum `Common` dan `Priority` didefinisikan di `QualiTrack.Models` — pastikan file DTO meng-import `using QualiTrack.Models`
+- **Testing endpoint:** Gunakan Postman atau Thunder Client, bukan browser langsung (browser hanya support GET)
 
 ---
 
@@ -422,12 +492,11 @@ Checklist (+ Department)
 | Fitur | Status | Sprint |
 |---|---|---|
 | Authentication (register, login, logout, forgot password) | ✅ Done | Sprint 1 |
-| Audit Plan CRUD + Priority | ✅ Done | Sprint 1 |
+| Audit Plan CRUD + Priority + Description | ✅ Done | Sprint 1 |
 | Finding CRUD + filter + logic status | ✅ Done | Sprint 1 |
 | CAPA CRUD + actions + closeout + overdue | ✅ Done | Sprint 1 |
-| Checklist template seed data | ✅ Done | Sprint 1 |
+| Checklist template seed data + Department | ✅ Done | Sprint 1 |
 | Upload file evidence | ✅ Done | Sprint 1 |
 | Role-based access control | ✅ Done | Sprint 1 |
-
----
+| Deploy ke Railway (backend + database) | ✅ Done | Sprint 1 |
 
