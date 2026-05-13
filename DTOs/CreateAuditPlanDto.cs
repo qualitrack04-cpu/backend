@@ -31,7 +31,7 @@ public class CreateScheduleDto
     public string AuditorName {get; set;} = string.Empty;
     
     [Required(ErrorMessage = "ScheduledDate wajib diisi")]
-    public DateOnly? ScheduledDate { get; set; }
+    public DateTime? ScheduledDate { get; set; }
     
     [Required(ErrorMessage = "Department wajib diisi")]
     [StringLength(100, ErrorMessage = "Department maksimal 100 karakter")]
