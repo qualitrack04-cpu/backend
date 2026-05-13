@@ -66,16 +66,27 @@ public class AuditPlanController : ControllerBase
 
         if (planDto.Schedules is not null)
         {
-            plan.Schedules = planDto.Schedules.Select(scheduleDto => new AuditSchedule
+            var schedules = new List<AuditSchedule>();
+            foreach (var scheduleDto in planDto.Schedules)
             {
-                Id = Guid.NewGuid(),
-                ClauseRef = scheduleDto.ClauseRef,
-                AuditorId = scheduleDto.AuditorId,
-                AuditorName = scheduleDto.AuditorName,
-                ScheduledDate = scheduleDto.ScheduledDate!.Value,
-                Department = scheduleDto.Department,
-                AuditPlan = plan
-            }).ToList();
+                var auditor = await _db.Users
+                    .FirstOrDefaultAsync(u => u.FullName.ToLower() == scheduleDto.AuditorName.ToLower());
+                if (auditor is null)
+                {
+                    return BadRequest(new { message = $"Auditor dengan nama {scheduleDto.AuditorName} tidak ditemukan" });
+                }
+
+                schedules.Add(new AuditSchedule
+                {
+                    Id = Guid.NewGuid(),
+                    ClauseRef = scheduleDto.ClauseRef,
+                    AuditorId = auditor.Id,
+                    AuditorName = auditor.FullName,
+                    ScheduledDate = scheduleDto.ScheduledDate!.Value,
+                    Department = scheduleDto.Department,
+                    AuditPlan = plan
+                });
+            }
         }
 
         _db.AuditPlans.Add(plan);
@@ -103,16 +114,28 @@ public class AuditPlanController : ControllerBase
         if (updatedPlanDto.Schedules is not null)
         {
             _db.AuditSchedules.RemoveRange(plan.Schedules);
-            plan.Schedules = updatedPlanDto.Schedules.Select(scheduleDto => new AuditSchedule
+            var newSchedules = new List<AuditSchedule>();
+            foreach (var scheduleDto in updatedPlanDto.Schedules)
             {
-                Id = Guid.NewGuid(),
-                ClauseRef = scheduleDto.ClauseRef,
-                AuditorId = scheduleDto.AuditorId,
-                AuditorName = scheduleDto.AuditorName,
-                ScheduledDate = scheduleDto.ScheduledDate!.Value,
-                Department = scheduleDto.Department,
-                AuditPlan = plan
-            }).ToList();
+                var auditor = await _db.Users
+                    .FirstOrDefaultAsync(u => u.FullName.ToLower() == scheduleDto.AuditorName.ToLower());
+                if (auditor is null)
+                {
+                    return BadRequest(new { message = $"Auditor dengan nama {scheduleDto.AuditorName} tidak ditemukan" });
+                }
+
+                newSchedules.Add(new AuditSchedule
+                {
+                    Id = Guid.NewGuid(),
+                    ClauseRef = scheduleDto.ClauseRef,
+                    AuditorId = auditor.Id,
+                    AuditorName = auditor.FullName,
+                    ScheduledDate = scheduleDto.ScheduledDate!.Value,
+                    Department = scheduleDto.Department,
+                    AuditPlanId = plan.Id
+                });
+            }
+            _db.AuditSchedules.AddRange(newSchedules);
         }
         
         await _db.SaveChangesAsync();
