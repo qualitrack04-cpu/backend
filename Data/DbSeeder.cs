@@ -6,7 +6,7 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(AppDbContext db)
     {
-        if (db.Checklists.Any()) return;
+        if (await db.Checklists.AnyAsync()) return;
 
         var checklists = new List<Checklist>
         {

@@ -70,6 +70,18 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
         });
     }
 
+    [HttpGet("auditors")]
+    [Authorize(Roles = "Admin,QualityManager")]
+    public async Task<IActionResult> GetAuditors()
+    {
+        var auditors = await db.Users
+            .Where(u => u.Role == "Auditor" || u.Role == "QualityManager")
+            .Select(u => new { u.Id, u.FullName, u.Role })
+            .ToListAsync();
+
+        return Ok(new { message = "Daftar auditor berhasil diambil", total = auditors.Count, data = auditors });
+    }
+
     [HttpPost("logout")]
     public IActionResult Logout()
     {

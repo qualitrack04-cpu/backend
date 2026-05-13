@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using QualiTrack.Models;
 
 namespace QualiTrack.DTOs;
 
@@ -15,6 +16,10 @@ public class CreateAuditPlanDto
     [StringLength(50)]
     public string Standard { get; set; } = string.Empty;
     
+    public AuditPriority Priority { get; set; } = AuditPriority.Common;
+
+    public string? Description { get; set; }
+
     public List<CreateScheduleDto>? Schedules { get; set; }
 }
 
