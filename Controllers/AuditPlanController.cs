@@ -124,7 +124,7 @@ public class AuditPlanController : ControllerBase
                     ClauseRef = scheduleDto.ClauseRef,
                     AuditorId = auditor.Id,
                     AuditorName = auditor.FullName,
-                    ScheduledDate = scheduleDto.ScheduledDate!.Value,
+                    ScheduledDate = DateTime.SpecifyKind(scheduleDto.ScheduledDate!.Value, DateTimeKind.Utc),
                     Department = scheduleDto.Department,
                     AuditPlan = plan
                 });
@@ -174,7 +174,7 @@ public class AuditPlanController : ControllerBase
                     ClauseRef = scheduleDto.ClauseRef,
                     AuditorId = auditor.Id,
                     AuditorName = auditor.FullName,
-                    ScheduledDate = scheduleDto.ScheduledDate!.Value,
+                    ScheduledDate = DateTime.SpecifyKind(scheduleDto.ScheduledDate!.Value, DateTimeKind.Utc),
                     Department = scheduleDto.Department,
                     AuditPlanId = plan.Id
                 });
