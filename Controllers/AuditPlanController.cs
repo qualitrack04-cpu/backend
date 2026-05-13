@@ -60,6 +60,8 @@ public class AuditPlanController : ControllerBase
             Year = planDto.Year,
             Standard = planDto.Standard,
             CreatedAt = DateTime.UtcNow,
+            Description = planDto.Description,
+            Priority = planDto.Priority
         };
 
         if (planDto.Schedules is not null)
@@ -95,7 +97,8 @@ public class AuditPlanController : ControllerBase
         plan.Title = updatedPlanDto.Title;
         plan.Year = updatedPlanDto.Year;
         plan.Standard = updatedPlanDto.Standard;
-
+        plan.Description = updatedPlanDto.Description;
+        plan.Priority = updatedPlanDto.Priority;
         if (updatedPlanDto.Schedules is not null)
         {
             _db.AuditSchedules.RemoveRange(plan.Schedules);
