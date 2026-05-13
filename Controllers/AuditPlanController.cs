@@ -30,8 +30,29 @@ public class AuditPlanController : ControllerBase
                 .ThenInclude(s => s.Auditor)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
+
+        var result = plans.Select(plan => new AuditPlanResponseDto
+        {
+            Id = plan.Id,
+            Title = plan.Title,
+            Year = plan.Year,
+            Standard = plan.Standard,
+            CreatedAt = plan.CreatedAt,
+            TotalSchedules = plan.Schedules.Count,
+            Schedules = plan.Schedules.Select(s => new ScheduleResponseDto
+            {
+                Id = s.Id,
+                ClauseRef = s.ClauseRef,
+                AuditorId = s.AuditorId,
+                AuditorName = s.Auditor != null
+                    ? s.Auditor.FullName
+                    : s.AuditorName,  // Fallback ke AuditorName jika join gagal
+                ScheduledDate = s.ScheduledDate,
+                Department = s.Department
+            }).ToList()
+        });
         
-        return Ok(new { message = "Data audit plan berhasil diambil", total = plans.Count, data = plans });
+        return Ok(new { message = "Data audit plan berhasil diambil", total = plans.Count, data = result });
     }
 
     [HttpGet("{id}")]
@@ -46,7 +67,28 @@ public class AuditPlanController : ControllerBase
         if (plan is null)
             return NotFound(new { message = $"Audit plan dengan ID {id} tidak ditemukan", id = id });
         
-        return Ok(new { message = "Data audit plan ditemukan", data = plan });
+        var result = new AuditPlanResponseDto
+        {
+            Id = plan.Id,
+            Title = plan.Title,
+            Year = plan.Year,
+            Standard = plan.Standard,
+            CreatedAt = plan.CreatedAt,
+            TotalSchedules = plan.Schedules.Count,
+            Schedules = plan.Schedules.Select(s => new ScheduleResponseDto
+            {
+                Id = s.Id,
+                ClauseRef = s.ClauseRef,
+                AuditorId = s.AuditorId,
+                AuditorName = s.Auditor != null
+                    ? s.Auditor.FullName
+                    : s.AuditorName,  // Fallback ke AuditorName jika join gagal
+                ScheduledDate = s.ScheduledDate,
+                Department = s.Department
+            }).ToList()
+        };
+
+        return Ok(new { message = "Data audit plan ditemukan", data = result });
     }
 
     [HttpPost]
