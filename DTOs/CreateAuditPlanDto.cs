@@ -27,13 +27,11 @@ public class CreateScheduleDto
 {
     [Required(ErrorMessage = "ClauseRef wajib diisi")]
     public string ClauseRef { get; set; } = string.Empty;
-    
-    public Guid AuditorId { get; set; }
 
     public string AuditorName {get; set;} = string.Empty;
     
     [Required(ErrorMessage = "ScheduledDate wajib diisi")]
-    public DateOnly? ScheduledDate { get; set; }
+    public DateTime? ScheduledDate { get; set; }
     
     [Required(ErrorMessage = "Department wajib diisi")]
     [StringLength(100, ErrorMessage = "Department maksimal 100 karakter")]

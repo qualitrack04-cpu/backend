@@ -30,8 +30,29 @@ public class AuditPlanController : ControllerBase
                 .ThenInclude(s => s.Auditor)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
+
+        var result = plans.Select(plan => new AuditPlanResponseDto
+        {
+            Id = plan.Id,
+            Title = plan.Title,
+            Year = plan.Year,
+            Standard = plan.Standard,
+            CreatedAt = plan.CreatedAt,
+            TotalSchedules = plan.Schedules.Count,
+            Schedules = plan.Schedules.Select(s => new ScheduleResponseDto
+            {
+                Id = s.Id,
+                ClauseRef = s.ClauseRef,
+                AuditorId = s.AuditorId ?? Guid.Empty,
+                AuditorName = s.Auditor != null
+                    ? s.Auditor.FullName
+                    : s.AuditorName,  // Fallback ke AuditorName jika join gagal
+                ScheduledDate = s.ScheduledDate,
+                Department = s.Department
+            }).ToList()
+        });
         
-        return Ok(new { message = "Data audit plan berhasil diambil", total = plans.Count, data = plans });
+        return Ok(new { message = "Data audit plan berhasil diambil", total = plans.Count, data = result });
     }
 
     [HttpGet("{id}")]
@@ -46,7 +67,28 @@ public class AuditPlanController : ControllerBase
         if (plan is null)
             return NotFound(new { message = $"Audit plan dengan ID {id} tidak ditemukan", id = id });
         
-        return Ok(new { message = "Data audit plan ditemukan", data = plan });
+        var result = new AuditPlanResponseDto
+        {
+            Id = plan.Id,
+            Title = plan.Title,
+            Year = plan.Year,
+            Standard = plan.Standard,
+            CreatedAt = plan.CreatedAt,
+            TotalSchedules = plan.Schedules.Count,
+            Schedules = plan.Schedules.Select(s => new ScheduleResponseDto
+            {
+                Id = s.Id,
+                ClauseRef = s.ClauseRef,
+                AuditorId = s.AuditorId ?? Guid.Empty,
+                AuditorName = s.Auditor != null
+                    ? s.Auditor.FullName
+                    : s.AuditorName,  // Fallback ke AuditorName jika join gagal
+                ScheduledDate = s.ScheduledDate,
+                Department = s.Department
+            }).ToList()
+        };
+
+        return Ok(new { message = "Data audit plan ditemukan", data = result });
     }
 
     [HttpPost]
@@ -66,17 +108,30 @@ public class AuditPlanController : ControllerBase
 
         if (planDto.Schedules is not null)
         {
-            plan.Schedules = planDto.Schedules.Select(scheduleDto => new AuditSchedule
+            var schedules = new List<AuditSchedule>();
+            foreach (var scheduleDto in planDto.Schedules)
             {
-                Id = Guid.NewGuid(),
-                ClauseRef = scheduleDto.ClauseRef,
-                AuditorId = scheduleDto.AuditorId,
-                AuditorName = scheduleDto.AuditorName,
-                ScheduledDate = scheduleDto.ScheduledDate!.Value,
-                Department = scheduleDto.Department,
-                AuditPlan = plan
-            }).ToList();
+                var auditor = await _db.Users
+                    .FirstOrDefaultAsync(u => u.FullName == scheduleDto.AuditorName);
+                if (auditor is null)
+                {
+                    return BadRequest(new { message = $"Auditor dengan nama {scheduleDto.AuditorName} tidak ditemukan" });
+                }
+
+                schedules.Add(new AuditSchedule
+                {
+                    Id = Guid.NewGuid(),
+                    ClauseRef = scheduleDto.ClauseRef,
+                    AuditorId = auditor.Id,
+                    AuditorName = auditor.FullName,
+                    ScheduledDate = scheduleDto.ScheduledDate!.Value,
+                    Department = scheduleDto.Department,
+                    AuditPlan = plan
+                });
+            }
+            plan.Schedules = schedules;
         }
+
 
         _db.AuditPlans.Add(plan);
         await _db.SaveChangesAsync();
@@ -103,16 +158,28 @@ public class AuditPlanController : ControllerBase
         if (updatedPlanDto.Schedules is not null)
         {
             _db.AuditSchedules.RemoveRange(plan.Schedules);
-            plan.Schedules = updatedPlanDto.Schedules.Select(scheduleDto => new AuditSchedule
+            var newSchedules = new List<AuditSchedule>();
+            foreach (var scheduleDto in updatedPlanDto.Schedules)
             {
-                Id = Guid.NewGuid(),
-                ClauseRef = scheduleDto.ClauseRef,
-                AuditorId = scheduleDto.AuditorId,
-                AuditorName = scheduleDto.AuditorName,
-                ScheduledDate = scheduleDto.ScheduledDate!.Value,
-                Department = scheduleDto.Department,
-                AuditPlan = plan
-            }).ToList();
+                var auditor = await _db.Users
+                    .FirstOrDefaultAsync(u => u.FullName == scheduleDto.AuditorName);
+                if (auditor is null)
+                {
+                    return BadRequest(new { message = $"Auditor dengan nama {scheduleDto.AuditorName} tidak ditemukan" });
+                }
+
+                newSchedules.Add(new AuditSchedule
+                {
+                    Id = Guid.NewGuid(),
+                    ClauseRef = scheduleDto.ClauseRef,
+                    AuditorId = auditor.Id,
+                    AuditorName = auditor.FullName,
+                    ScheduledDate = scheduleDto.ScheduledDate!.Value,
+                    Department = scheduleDto.Department,
+                    AuditPlanId = plan.Id
+                });
+            }
+            _db.AuditSchedules.AddRange(newSchedules);
         }
         
         await _db.SaveChangesAsync();
