@@ -9,6 +9,7 @@ public class AuditPlan
     public int Year { get; set; }
     public string Standard { get; set; } = string.Empty; // ISO9001, ISO14001, GMP
     public AuditPriority Priority { get; set; } = AuditPriority.Common;
+    public string? Description { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<AuditSchedule> Schedules { get; set; } = [];
