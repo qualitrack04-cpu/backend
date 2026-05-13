@@ -28,8 +28,6 @@ public class CreateScheduleDto
     [Required(ErrorMessage = "ClauseRef wajib diisi")]
     public string ClauseRef { get; set; } = string.Empty;
     
-    [Required(ErrorMessage = "AuditorId wajib diisi")]
-    [NotEmptyGuid(ErrorMessage = "AuditorId tidak boleh kosong")]
     public Guid AuditorId { get; set; }
 
     public string AuditorName {get; set;} = string.Empty;
