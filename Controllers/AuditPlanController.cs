@@ -43,7 +43,7 @@ public class AuditPlanController : ControllerBase
             {
                 Id = s.Id,
                 ClauseRef = s.ClauseRef,
-                AuditorId = s.AuditorId,
+                AuditorId = s.AuditorId ?? Guid.Empty,
                 AuditorName = s.Auditor != null
                     ? s.Auditor.FullName
                     : s.AuditorName,  // Fallback ke AuditorName jika join gagal
@@ -79,7 +79,7 @@ public class AuditPlanController : ControllerBase
             {
                 Id = s.Id,
                 ClauseRef = s.ClauseRef,
-                AuditorId = s.AuditorId,
+                AuditorId = s.AuditorId ?? Guid.Empty,
                 AuditorName = s.Auditor != null
                     ? s.Auditor.FullName
                     : s.AuditorName,  // Fallback ke AuditorName jika join gagal
@@ -112,7 +112,7 @@ public class AuditPlanController : ControllerBase
             foreach (var scheduleDto in planDto.Schedules)
             {
                 var auditor = await _db.Users
-                    .FirstOrDefaultAsync(u => u.FullName.ToLower() == scheduleDto.AuditorName.ToLower());
+                    .FirstOrDefaultAsync(u => u.FullName == scheduleDto.AuditorName);
                 if (auditor is null)
                 {
                     return BadRequest(new { message = $"Auditor dengan nama {scheduleDto.AuditorName} tidak ditemukan" });
@@ -129,7 +129,9 @@ public class AuditPlanController : ControllerBase
                     AuditPlan = plan
                 });
             }
+            plan.Schedules = schedules;
         }
+
 
         _db.AuditPlans.Add(plan);
         await _db.SaveChangesAsync();
@@ -160,7 +162,7 @@ public class AuditPlanController : ControllerBase
             foreach (var scheduleDto in updatedPlanDto.Schedules)
             {
                 var auditor = await _db.Users
-                    .FirstOrDefaultAsync(u => u.FullName.ToLower() == scheduleDto.AuditorName.ToLower());
+                    .FirstOrDefaultAsync(u => u.FullName == scheduleDto.AuditorName);
                 if (auditor is null)
                 {
                     return BadRequest(new { message = $"Auditor dengan nama {scheduleDto.AuditorName} tidak ditemukan" });
