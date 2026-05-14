@@ -38,6 +38,8 @@ public class AuditPlanController : ControllerBase
             Year = plan.Year,
             Standard = plan.Standard,
             CreatedAt = plan.CreatedAt,
+            Description = plan.Description,
+            Priority = plan.Priority,
             TotalSchedules = plan.Schedules.Count,
             Schedules = plan.Schedules.Select(s => new ScheduleResponseDto
             {
@@ -74,6 +76,8 @@ public class AuditPlanController : ControllerBase
             Year = plan.Year,
             Standard = plan.Standard,
             CreatedAt = plan.CreatedAt,
+            Description = plan.Description,
+            Priority = plan.Priority,
             TotalSchedules = plan.Schedules.Count,
             Schedules = plan.Schedules.Select(s => new ScheduleResponseDto
             {
