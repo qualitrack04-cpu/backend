@@ -45,10 +45,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
 builder.Services.AddControllers()
-    .AddJsonOptions(opt =>
+    .AddJsonOptions(options =>
     {
-        opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        opt.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter()
+        );
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
