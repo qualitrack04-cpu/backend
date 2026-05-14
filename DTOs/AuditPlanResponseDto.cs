@@ -24,3 +24,16 @@ public class ScheduleResponseDto
     public DateTime ScheduledDate { get; set; }
     public string Department { get; set; } = string.Empty;
 }
+
+public class BatchAuditResponseDto
+{
+    public Guid SessionId { get; set; }
+    public List<AuditResponseItemDto> Responses { get; set; } = [];
+}
+
+public class AuditResponseItemDto
+{
+    public Guid ChecklistItemId { get; set; }
+    public bool IsPassed { get; set; }
+    public string? Notes { get; set; }
+}

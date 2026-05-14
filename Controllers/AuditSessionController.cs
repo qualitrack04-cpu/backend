@@ -36,10 +36,14 @@ public class AuditSessionController : ControllerBase
 
         // Cegah duplikat session untuk schedule yang sama
         var existing = await _db.AuditSessions
-            .FirstOrDefaultAsync(s => s.ScheduleId == dto.ScheduleId 
-                                   && s.Status == AuditSessionStatus.InProgress);
+            .FirstOrDefaultAsync(s => s.ScheduleId == dto.ScheduleId );
+
         if (existing is not null)
-            return BadRequest(new { message = "Session sedang berjalan untuk schedule ini", data = existing.Id });
+            return Ok(new 
+            { 
+                message = "Sesi audit sudah ada", 
+                data = new {sessionId = existing.Id, status = existing.Status.ToString()}
+            });
 
         var session = new AuditSession
         {
