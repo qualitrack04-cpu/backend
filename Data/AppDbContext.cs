@@ -6,6 +6,10 @@ namespace QualiTrack.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    static AppDbContext()
+    {
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+    }
     public DbSet<AuditPlan> AuditPlans => Set<AuditPlan>();
     public DbSet<AuditSchedule> AuditSchedules => Set<AuditSchedule>();
     public DbSet<Checklist> Checklists => Set<Checklist>();
