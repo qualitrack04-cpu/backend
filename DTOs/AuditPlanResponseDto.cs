@@ -1,5 +1,7 @@
 namespace QualiTrack.DTOs;
 
+using QualiTrack.Models;
+
 public class AuditPlanResponseDto
 {
     public Guid Id { get; set; }
@@ -7,6 +9,8 @@ public class AuditPlanResponseDto
     public int Year { get; set; }
     public string Standard { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public string? Description { get; set; }
+    public AuditPriority Priority { get; set; }
     public int TotalSchedules { get; set; }
     public List<ScheduleResponseDto> Schedules { get; set; } = new();
 }
@@ -19,4 +23,18 @@ public class ScheduleResponseDto
     public string AuditorName { get; set; } = string.Empty;  // Join dari User
     public DateTime ScheduledDate { get; set; }
     public string Department { get; set; } = string.Empty;
+    public bool IsFinished { get; set; }
+}
+
+public class BatchAuditResponseDto
+{
+    public Guid SessionId { get; set; }
+    public List<AuditResponseItemDto> Responses { get; set; } = [];
+}
+
+public class AuditResponseItemDto
+{
+    public Guid ChecklistItemId { get; set; }
+    public bool IsPassed { get; set; }
+    public string? Notes { get; set; }
 }
