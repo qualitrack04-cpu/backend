@@ -55,22 +55,6 @@ public class CapaController(AppDbContext db) : ControllerBase
         return capa is null ? NotFound() : Ok(capa);
     }
 
-    // GET /api/Finding/without-capa
-    [HttpGet("without-capa")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
-    public async Task<IActionResult> GetWithoutCapa()
-    {
-        var findingsWithCapa = await db.CAPAs
-            .Select(c => c.FindingId)
-            .ToListAsync();
-
-        var findings = await db.Findings
-            .Where(f => !findingsWithCapa.Contains(f.Id))
-            .ToListAsync();
-
-        return Ok(new { total = findings.Count, data = findings });
-    }
-
     [HttpPost("finding/{findingId}")]
     [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> Create(Guid findingId, [FromBody] CreateCapaRequest req)
