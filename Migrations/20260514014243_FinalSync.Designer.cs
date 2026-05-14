@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QualiTrack.Data;
@@ -11,9 +12,11 @@ using QualiTrack.Data;
 namespace QualiTrack.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260514014243_FinalSync")]
+    partial class FinalSync
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -259,9 +262,6 @@ namespace QualiTrack.Migrations
 
                     b.Property<string>("ClauseRef")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Description")
                         .HasColumnType("text");
 
                     b.Property<int>("OrderIndex")

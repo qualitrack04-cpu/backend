@@ -31,6 +31,11 @@ public class AuditPlanController : ControllerBase
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
 
+        var completedScheduleIds = await _db.AuditSessions
+            .Where(s => s.Status ==AuditSessionStatus.Completed)
+            .Select(s => s.ScheduleId)
+            .ToListAsync();
+
         var result = plans.Select(plan => new AuditPlanResponseDto
         {
             Id = plan.Id,
@@ -38,6 +43,8 @@ public class AuditPlanController : ControllerBase
             Year = plan.Year,
             Standard = plan.Standard,
             CreatedAt = plan.CreatedAt,
+            Description = plan.Description,
+            Priority = plan.Priority,
             TotalSchedules = plan.Schedules.Count,
             Schedules = plan.Schedules.Select(s => new ScheduleResponseDto
             {
@@ -48,7 +55,9 @@ public class AuditPlanController : ControllerBase
                     ? s.Auditor.FullName
                     : s.AuditorName,  // Fallback ke AuditorName jika join gagal
                 ScheduledDate = s.ScheduledDate,
-                Department = s.Department
+                Department = s.Department,
+
+                IsFinished = completedScheduleIds.Contains(s.Id)
             }).ToList()
         });
         
@@ -74,6 +83,8 @@ public class AuditPlanController : ControllerBase
             Year = plan.Year,
             Standard = plan.Standard,
             CreatedAt = plan.CreatedAt,
+            Description = plan.Description,
+            Priority = plan.Priority,
             TotalSchedules = plan.Schedules.Count,
             Schedules = plan.Schedules.Select(s => new ScheduleResponseDto
             {
@@ -124,7 +135,7 @@ public class AuditPlanController : ControllerBase
                     ClauseRef = scheduleDto.ClauseRef,
                     AuditorId = auditor.Id,
                     AuditorName = auditor.FullName,
-                    ScheduledDate = scheduleDto.ScheduledDate!.Value,
+                    ScheduledDate = DateTime.SpecifyKind(scheduleDto.ScheduledDate!.Value, DateTimeKind.Utc),
                     Department = scheduleDto.Department,
                     AuditPlan = plan
                 });
@@ -174,7 +185,7 @@ public class AuditPlanController : ControllerBase
                     ClauseRef = scheduleDto.ClauseRef,
                     AuditorId = auditor.Id,
                     AuditorName = auditor.FullName,
-                    ScheduledDate = scheduleDto.ScheduledDate!.Value,
+                    ScheduledDate = DateTime.SpecifyKind(scheduleDto.ScheduledDate!.Value, DateTimeKind.Utc),
                     Department = scheduleDto.Department,
                     AuditPlanId = plan.Id
                 });
@@ -188,7 +199,7 @@ public class AuditPlanController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,QualityManager")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var plan = await _db.AuditPlans.FindAsync(id);
