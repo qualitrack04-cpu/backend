@@ -21,6 +21,8 @@ public class CapaController(AppDbContext db) : ControllerBase
         var query = db.CAPAs
             .Include(c => c.Actions)
             .Include(c => c.CloseOut)
+            .Include(c => c.Pic)
+            .Include(c => c.Finding)
             .AsQueryable();
         if (status.HasValue) query = query.Where(c => c.Status == status);
         return Ok(await query.ToListAsync());
@@ -34,6 +36,8 @@ public class CapaController(AppDbContext db) : ControllerBase
         var overdue = await db.CAPAs
             .Where(c => c.Deadline < today && c.Status != CAPAStatus.Closed)
             .Include(c => c.Actions)
+            .Include(c => c.Pic)
+            .Include(c => c.Finding)
             .ToListAsync();
         return Ok(overdue);
     }
@@ -45,6 +49,8 @@ public class CapaController(AppDbContext db) : ControllerBase
         var capa = await db.CAPAs
             .Include(c => c.Actions)
             .Include(c => c.CloseOut)
+            .Include(c => c.Pic)
+            .Include(c => c.Finding)
             .FirstOrDefaultAsync(c => c.Id == id);
         return capa is null ? NotFound() : Ok(capa);
     }
