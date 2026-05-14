@@ -1,5 +1,7 @@
 namespace QualiTrack.DTOs;
 
+using QualiTrack.Models;
+
 public class AuditPlanResponseDto
 {
     public Guid Id { get; set; }
@@ -7,6 +9,8 @@ public class AuditPlanResponseDto
     public int Year { get; set; }
     public string Standard { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public string? Description { get; set; }
+    public AuditPriority Priority { get; set; }
     public int TotalSchedules { get; set; }
     public List<ScheduleResponseDto> Schedules { get; set; } = new();
 }
