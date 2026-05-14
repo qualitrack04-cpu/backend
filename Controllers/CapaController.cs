@@ -201,8 +201,6 @@ public class CapaController(AppDbContext db) : ControllerBase
 
         db.CloseOutVerifications.Add(verification);
         capa.Status = CAPAStatus.Closed;
-        if (capa.Finding is not null)
-            capa.Finding.Status = FindingStatus.Closed;
 
         await db.Findings
             .Where(f => f.Id == capa.FindingId)
