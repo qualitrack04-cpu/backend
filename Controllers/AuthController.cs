@@ -82,6 +82,22 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
         return Ok(new { message = "Daftar auditor berhasil diambil", total = auditors.Count, data = auditors });
     }
 
+    [HttpGet("users")]
+    [Authorize(Roles = "Admin,QualityManager")]
+    public async Task<IActionResult> GetUsers([FromQuery] string? role)
+    {
+        var query = db.Users.AsQueryable();
+        
+        if (!string.IsNullOrEmpty(role))
+            query = query.Where(u => u.Role == role);
+
+        var users = await query
+            .Select(u => new { u.Id, u.FullName, u.Email, u.Role, u.Status })
+            .ToListAsync();
+
+        return Ok(new { message = "Daftar user berhasil diambil", total = users.Count, data = users });
+    }
+
     [HttpPost("logout")]
     public IActionResult Logout()
     {
