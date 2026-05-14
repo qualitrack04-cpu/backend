@@ -22,7 +22,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to)
     {
-        var query = db.Findings.Include(f => f.Capa).AsQueryable();
+        var query = db.Findings.AsQueryable();
         if (status.HasValue) query = query.Where(f => f.Status == status);
         if (category.HasValue) query = query.Where(f => f.Category == category);
         if (from.HasValue) query = query.Where(f => f.FoundAt >= from.Value);
@@ -34,7 +34,7 @@ public class FindingController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var finding = await db.Findings.Include(f => f.Capa).FirstOrDefaultAsync(f => f.Id == id);
+        var finding = await db.Findings.FirstOrDefaultAsync(f => f.Id == id);
         return finding is null ? NotFound() : Ok(finding);
     }
 
