@@ -28,7 +28,8 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
             StoragePath = result,
             ContentType = file.ContentType,
             FileSizeBytes = file.Length,
-            UploadedAt = DateTime.UtcNow
+            UploadedAt = DateTime.UtcNow,
+            FindingId = findingId
         };
 
         db.EvidenceFiles.Add(evidence);
@@ -74,9 +75,18 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
     [HttpGet("finding/{findingId}")]
     public async Task<IActionResult> GetFindingFiles(Guid findingId)
     {
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
         var files = await db.EvidenceFiles
-            .Where(e => e.AuditResponseId == null && e.CapaActionId == null)
+            .Where(e => e.FindingId == findingId)
+            .Select( e => new
+            {
+                id = e.Id,
+                fileName = e.FileName,
+                url = $"{baseUrl}/uploads/{Path.GetFileName(e.StoragePath)}"
+            })
             .ToListAsync();
+
         return Ok(files);
     }
 
