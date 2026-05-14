@@ -192,7 +192,7 @@ public class AuditPlanController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,QualityManager")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var plan = await _db.AuditPlans.FindAsync(id);
