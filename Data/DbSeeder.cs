@@ -19,11 +19,11 @@ public static class DbSeeder
                 CreatedAt = DateTime.UtcNow,
                 Items =
                 [
-                    new() { Id = Guid.NewGuid(), Question = "Penerimaan barang sesuai prosedur", ClauseRef = "ISO9001", OrderIndex = 1 },
-                    new() { Id = Guid.NewGuid(), Question = "Pemeriksaan kualitas barang masuk", ClauseRef = "ISO9001", OrderIndex = 2 },
-                    new() { Id = Guid.NewGuid(), Question = "Labeling & identifikasi barang jelas", ClauseRef = "ISO9001", OrderIndex = 3 },
-                    new() { Id = Guid.NewGuid(), Question = "Penerapan FIFO/FEFO", ClauseRef = "ISO9001", OrderIndex = 4 },
-                    new() { Id = Guid.NewGuid(), Question = "Pencatatan stok akurat", ClauseRef = "ISO9001", OrderIndex = 5 },
+                    new() { Id = Guid.NewGuid(), Question = "Goods receipt follows established procedure", ClauseRef = "ISO9001", OrderIndex = 1 },
+                    new() { Id = Guid.NewGuid(), Question = "Incoming goods quality inspection conducted", ClauseRef = "ISO9001", OrderIndex = 2 },
+                    new() { Id = Guid.NewGuid(), Question = "Goods labeling and identification are clear", ClauseRef = "ISO9001", OrderIndex = 3 },
+                    new() { Id = Guid.NewGuid(), Question = "FIFO/FEFO principle is applied", ClauseRef = "ISO9001", OrderIndex = 4 },
+                    new() { Id = Guid.NewGuid(), Question = "Stock records are accurate and up to date", ClauseRef = "ISO9001", OrderIndex = 5 },
                 ]
             },
             new()
@@ -35,43 +35,43 @@ public static class DbSeeder
                 CreatedAt = DateTime.UtcNow,
                 Items =
                 [
-                    new() { Id = Guid.NewGuid(), Question = "Pemisahan limbah sesuai kategori", ClauseRef = "ISO14001", OrderIndex = 1 },
-                    new() { Id = Guid.NewGuid(), Question = "Pengelolaan limbah (karton, plastik, dll)", ClauseRef = "ISO14001", OrderIndex = 2 },
-                    new() { Id = Guid.NewGuid(), Question = "Penyimpanan bahan berbahaya aman", ClauseRef = "ISO14001", OrderIndex = 3 },
-                    new() { Id = Guid.NewGuid(), Question = "Tidak ada kebocoran/pencemaran", ClauseRef = "ISO14001", OrderIndex = 4 },
-                    new() { Id = Guid.NewGuid(), Question = "Tersedia tempat sampah terpisah", ClauseRef = "ISO14001", OrderIndex = 5 },
+                    new() { Id = Guid.NewGuid(), Question = "Waste is separated according to category", ClauseRef = "ISO14001", OrderIndex = 1 },
+                    new() { Id = Guid.NewGuid(), Question = "Waste management (cardboard, plastic, etc.) is in place", ClauseRef = "ISO14001", OrderIndex = 2 },
+                    new() { Id = Guid.NewGuid(), Question = "Hazardous materials are stored safely", ClauseRef = "ISO14001", OrderIndex = 3 },
+                    new() { Id = Guid.NewGuid(), Question = "No leaks or environmental contamination found", ClauseRef = "ISO14001", OrderIndex = 4 },
+                    new() { Id = Guid.NewGuid(), Question = "Separate waste bins are available", ClauseRef = "ISO14001", OrderIndex = 5 },
                 ]
             },
             new()
             {
                 Id = Guid.NewGuid(),
-                Title = "ISO 9001 - Produksi",
+                Title = "ISO 9001 - Production",
                 Standard = "ISO9001",
                 Department = "Produksi",
                 CreatedAt = DateTime.UtcNow,
                 Items =
                 [
-                    new() { Id = Guid.NewGuid(), Question = "SOP produksi tersedia & dipatuhi", ClauseRef = "ISO9001", OrderIndex = 1 },
-                    new() { Id = Guid.NewGuid(), Question = "Mesin dalam kondisi layak", ClauseRef = "ISO9001", OrderIndex = 2 },
-                    new() { Id = Guid.NewGuid(), Question = "Quality control selama proses", ClauseRef = "ISO9001", OrderIndex = 3 },
-                    new() { Id = Guid.NewGuid(), Question = "Produk cacat dicatat & ditangani", ClauseRef = "ISO9001", OrderIndex = 4 },
-                    new() { Id = Guid.NewGuid(), Question = "Dokumentasi produksi lengkap", ClauseRef = "ISO9001", OrderIndex = 5 },
+                    new() { Id = Guid.NewGuid(), Question = "Production SOP is available and followed", ClauseRef = "ISO9001", OrderIndex = 1 },
+                    new() { Id = Guid.NewGuid(), Question = "Machines are in proper working condition", ClauseRef = "ISO9001", OrderIndex = 2 },
+                    new() { Id = Guid.NewGuid(), Question = "Quality control is performed during production", ClauseRef = "ISO9001", OrderIndex = 3 },
+                    new() { Id = Guid.NewGuid(), Question = "Defective products are recorded and handled", ClauseRef = "ISO9001", OrderIndex = 4 },
+                    new() { Id = Guid.NewGuid(), Question = "Production documentation is complete", ClauseRef = "ISO9001", OrderIndex = 5 },
                 ]
             },
             new()
             {
                 Id = Guid.NewGuid(),
-                Title = "ISO 14001 - Produksi",
+                Title = "ISO 14001 - Production",
                 Standard = "ISO14001",
                 Department = "Produksi",
                 CreatedAt = DateTime.UtcNow,
                 Items =
                 [
-                    new() { Id = Guid.NewGuid(), Question = "Pengelolaan limbah produksi", ClauseRef = "ISO14001", OrderIndex = 1 },
-                    new() { Id = Guid.NewGuid(), Question = "Emisi (asap/gas) terkontrol", ClauseRef = "ISO14001", OrderIndex = 2 },
-                    new() { Id = Guid.NewGuid(), Question = "Penggunaan energi efisien", ClauseRef = "ISO14001", OrderIndex = 3 },
-                    new() { Id = Guid.NewGuid(), Question = "Pengelolaan air limbah", ClauseRef = "ISO14001", OrderIndex = 4 },
-                    new() { Id = Guid.NewGuid(), Question = "Penyimpanan bahan kimia aman", ClauseRef = "ISO14001", OrderIndex = 5 },
+                    new() { Id = Guid.NewGuid(), Question = "Production waste is properly managed", ClauseRef = "ISO14001", OrderIndex = 1 },
+                    new() { Id = Guid.NewGuid(), Question = "Emissions (smoke/gas) are controlled", ClauseRef = "ISO14001", OrderIndex = 2 },
+                    new() { Id = Guid.NewGuid(), Question = "Energy usage is efficient", ClauseRef = "ISO14001", OrderIndex = 3 },
+                    new() { Id = Guid.NewGuid(), Question = "Wastewater is properly managed", ClauseRef = "ISO14001", OrderIndex = 4 },
+                    new() { Id = Guid.NewGuid(), Question = "Chemical storage is safe and compliant", ClauseRef = "ISO14001", OrderIndex = 5 },
                 ]
             },
         };
