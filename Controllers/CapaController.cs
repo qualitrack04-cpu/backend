@@ -167,7 +167,7 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,QualityManager")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var capa = await db.CAPAs.FindAsync(id);

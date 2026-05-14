@@ -33,7 +33,7 @@ public class FindingController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,QualityManager,Auditor")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> Create([FromBody] CreateFindingRequest req)
     {
         var finding = new Finding
@@ -52,8 +52,23 @@ public class FindingController(AppDbContext db) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = finding.Id }, finding);
     }
 
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] CreateFindingRequest req)
+    {
+        var finding = await db.Findings.FindAsync(id);
+        if (finding is null) return NotFound();
+
+        finding.Category = req.Category!.Value;
+        finding.Description = req.Description;
+        finding.ClauseRef = req.ClauseRef;
+        
+        await db.SaveChangesAsync();
+        return Ok(finding);
+    }
+
     [HttpPatch("{id}/status")]
-    [Authorize(Roles = "Admin,QualityManager")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] FindingStatus status)
     {
         var finding = await db.Findings.FindAsync(id);
@@ -64,7 +79,7 @@ public class FindingController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var finding = await db.Findings.FindAsync(id);
