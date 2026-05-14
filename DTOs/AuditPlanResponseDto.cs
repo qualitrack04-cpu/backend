@@ -23,6 +23,7 @@ public class ScheduleResponseDto
     public string AuditorName { get; set; } = string.Empty;  // Join dari User
     public DateTime ScheduledDate { get; set; }
     public string Department { get; set; } = string.Empty;
+    public bool IsFinished { get; set; }
 }
 
 public class BatchAuditResponseDto

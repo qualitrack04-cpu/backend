@@ -31,6 +31,11 @@ public class AuditPlanController : ControllerBase
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
 
+        var completedScheduleIds = await _db.AuditSessions
+            .Where(s => s.Status ==AuditSessionStatus.Completed)
+            .Select(s => s.ScheduleId)
+            .ToListAsync();
+
         var result = plans.Select(plan => new AuditPlanResponseDto
         {
             Id = plan.Id,
@@ -50,7 +55,9 @@ public class AuditPlanController : ControllerBase
                     ? s.Auditor.FullName
                     : s.AuditorName,  // Fallback ke AuditorName jika join gagal
                 ScheduledDate = s.ScheduledDate,
-                Department = s.Department
+                Department = s.Department,
+
+                IsFinished = completedScheduleIds.Contains(s.Id)
             }).ToList()
         });
         
