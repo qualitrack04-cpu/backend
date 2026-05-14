@@ -5,16 +5,23 @@ namespace QualiTrack.DTOs;
 
 public class CreateFindingRequest
 {
+    [Required]
+    public string Title { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
     public Guid? SessionId { get; set; }
-
-    [Required(ErrorMessage = "Category wajib diisi")]
+    [Required]
     public FindingCategory? Category { get; set; }
-
-    [Required(ErrorMessage = "Description wajib diisi")]
-    [StringLength(2000, MinimumLength = 10, ErrorMessage = "Description harus antara 10 sampai 2000 karakter")]
+    [Required]
     public string Description { get; set; } = string.Empty;
+    public string ClauseRef { get; set; } = string.Empty;
+}
 
-    [Required(ErrorMessage = "ClauseRef wajib diisi")]
-    [StringLength(200, MinimumLength = 1, ErrorMessage = "ClauseRef harus antara 1 sampai 200 karakter")]
+public class UpdateFindingRequest
+{
+    [Required]
+    public string Title { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
+    public FindingCategory? Category { get; set; }
+    public string Description { get; set; } = string.Empty;
     public string ClauseRef { get; set; } = string.Empty;
 }

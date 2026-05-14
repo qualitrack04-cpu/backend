@@ -7,6 +7,8 @@ public class Finding
     public Guid Id { get; set; }
     public Guid? SessionId { get; set; }
     public AuditSession? Session { get; set; }
+    public string Title {get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
     public FindingCategory Category { get; set; }
     public string Description { get; set; } = string.Empty;
     public string ClauseRef { get; set; } = string.Empty;

@@ -21,9 +21,16 @@ public class CapaController(AppDbContext db) : ControllerBase
         var query = db.CAPAs
             .Include(c => c.Actions)
             .Include(c => c.CloseOut)
+            .Include(c => c.Pic)
             .AsQueryable();
+
         if (status.HasValue) query = query.Where(c => c.Status == status);
-        return Ok(await query.ToListAsync());
+
+        var capas = await query.ToListAsync();
+
+        var response = capas.Select(MapToResponseDto).ToList();
+
+        return Ok(response);
     }
 
     [HttpGet("overdue")]
@@ -34,8 +41,11 @@ public class CapaController(AppDbContext db) : ControllerBase
         var overdue = await db.CAPAs
             .Where(c => c.Deadline < today && c.Status != CAPAStatus.Closed)
             .Include(c => c.Actions)
+            .Include(c => c.Pic)
             .ToListAsync();
-        return Ok(overdue);
+
+        var response = overdue.Select(c => MapToResponseDto(c)).ToList();
+        return Ok(response);
     }
 
     [HttpGet("{id}")]
@@ -45,8 +55,11 @@ public class CapaController(AppDbContext db) : ControllerBase
         var capa = await db.CAPAs
             .Include(c => c.Actions)
             .Include(c => c.CloseOut)
+            .Include(c => c.Pic)
             .FirstOrDefaultAsync(c => c.Id == id);
-        return capa is null ? NotFound() : Ok(capa);
+
+        if (capa is null) return NotFound();
+        return Ok(MapToResponseDto(capa));
     }
 
     [HttpPost("finding/{findingId}")]
@@ -55,10 +68,22 @@ public class CapaController(AppDbContext db) : ControllerBase
     {
         var finding = await db.Findings.FindAsync(findingId);
         if (finding is null) return NotFound("Finding tidak ditemukan");
+
         if (!req.Deadline.HasValue)
             return BadRequest(new { message = "Deadline wajib diisi" });
+
         if (!req.PicId.HasValue || req.PicId == Guid.Empty)
-            return BadRequest(new { message = "PIC harus diisi dan bukan Guid kosong" });
+        {
+            if (string.IsNullOrEmpty(req.PicName))
+                return BadRequest(new { message = "PIC harus diisi dengan PicId atau PicName" });
+
+            var user = await db.Users
+                .FirstOrDefaultAsync(u => u.FullName == req.PicName);
+            if (user is null)
+                return BadRequest(new { message = "PIC tidak ditemukan berdasarkan nama" });
+
+            req.PicId = user.Id;
+        }
 
         var capa = new CAPA
         {
@@ -76,7 +101,13 @@ public class CapaController(AppDbContext db) : ControllerBase
         db.CAPAs.Add(capa);
         finding.Status = FindingStatus.InProgress;
         await db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = capa.Id }, capa);
+
+        var createdCapa = await db.CAPAs
+            .Include(c => c.Actions)
+            .Include(c => c.Pic)
+            .FirstOrDefaultAsync(c => c.Id == capa.Id);
+            
+        return CreatedAtAction(nameof(GetById), new { id = capa.Id }, MapToResponseDto(createdCapa));
     }
 
     [HttpPut("{id}")]
@@ -133,14 +164,25 @@ public class CapaController(AppDbContext db) : ControllerBase
         db.CAPAActions.Add(action);
         capa.Status = CAPAStatus.InProgress;
         await db.SaveChangesAsync();
-        return Ok(action);
+
+        var doneBy = await db.Users.FindAsync(req.DoneById.Value);
+        var response = new CAPAActionResponseDto
+        {
+            Id = action.Id,
+            CapaId = action.CapaId,
+            Description = action.Description,
+            DoneById = action.DoneById,
+            DoneByName = doneBy?.FullName,
+            DoneAt = action.DoneAt
+        };
+        return Ok(response);
     }
 
     [HttpPost("{id}/closeout")]
     [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> CloseOut(Guid id, [FromBody] CloseOutVerificationRequest req)
     {
-        var capa = await db.CAPAs.Include(c => c.Finding).FirstOrDefaultAsync(c => c.Id == id);
+        var capa = await db.CAPAs.FirstOrDefaultAsync(c => c.Id == id);
         if (capa is null) return NotFound();
         if (!req.IsEffective.HasValue)
             return BadRequest(new { message = "IsEffective wajib diisi" });
@@ -162,12 +204,28 @@ public class CapaController(AppDbContext db) : ControllerBase
         if (capa.Finding is not null)
             capa.Finding.Status = FindingStatus.Closed;
 
+        await db.Findings
+            .Where(f => f.Id == capa.FindingId)
+            .ExecuteUpdateAsync(f => f.SetProperty(f => f.Status, FindingStatus.Closed));
+
         await db.SaveChangesAsync();
-        return Ok(verification);
+
+        var verifiedBy = await db.Users.FindAsync(req.VerifiedById.Value);
+        var response = new CloseOutResponseDto
+        {
+            Id = verification.Id,
+            CapaId = verification.CapaId,
+            IsEffective = verification.IsEffective,
+            VerificationNotes = verification.VerificationNotes,
+            VerifiedById = verification.VerifiedById,
+            VerifiedByName = verifiedBy?.FullName,
+            VerifiedAt = verification.VerifiedAt
+        };
+        return Ok(response);
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,QualityManager")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var capa = await db.CAPAs.FindAsync(id);
@@ -175,5 +233,39 @@ public class CapaController(AppDbContext db) : ControllerBase
         db.CAPAs.Remove(capa);
         await db.SaveChangesAsync();
         return NoContent();
+    }
+
+    private CAPAResponseDto MapToResponseDto(CAPA capa)
+    {
+        return new CAPAResponseDto
+        {
+            Id = capa.Id,
+            FindingId = capa.FindingId,
+            RootCause = capa.RootCause,
+            CorrectiveAction = capa.CorrectiveAction,
+            PreventiveAction = capa.PreventiveAction,
+            Deadline = capa.Deadline,
+            Status = capa.Status,
+            PicId = capa.PicId,
+            PicName = capa.Pic?.FullName,
+            CreatedAt = capa.CreatedAt,
+            Actions = capa.Actions.Select(a => new CAPAActionResponseDto
+            {
+                Id = a.Id,
+                CapaId = a.CapaId,
+                Description = a.Description,
+                DoneById = a.DoneById,
+                DoneAt = a.DoneAt
+            }).ToList(),
+            CloseOut = capa.CloseOut == null ? null : new CloseOutResponseDto
+            {
+                Id = capa.CloseOut.Id,
+                CapaId = capa.CloseOut.CapaId,
+                IsEffective = capa.CloseOut.IsEffective,
+                VerificationNotes = capa.CloseOut.VerificationNotes,
+                VerifiedById = capa.CloseOut.VerifiedById,
+                VerifiedAt = capa.CloseOut.VerifiedAt
+            }
+        };
     }
 }

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using QualiTrack.Models;
 
 namespace QualiTrack.DTOs;
 
@@ -20,6 +21,7 @@ public class CreateCapaRequest
 
     [Required(ErrorMessage = "PIC harus diisi")]
     public Guid? PicId { get; set; }
+    public string? PicName { get; set; }
 }
 
 public class UpdateCapaRequestDto
@@ -39,6 +41,7 @@ public class UpdateCapaRequestDto
     public DateOnly? Deadline { get; set; }
 
     public Guid? PicId { get; set; }
+    public string? PicName { get; set; }
 }
 
 public class AddCapaActionRequest
@@ -62,4 +65,48 @@ public class CloseOutVerificationRequest
 
     [Required(ErrorMessage = "VerifiedById wajib diisi")]
     public Guid? VerifiedById { get; set; }
+}
+
+
+public class CAPAResponseDto
+{
+    public Guid Id { get; set; }
+    public Guid FindingId { get; set; }
+    public string RootCause { get; set; } = string.Empty;
+    public string CorrectiveAction { get; set; } = string.Empty;
+    public string? PreventiveAction { get; set; }
+    public DateOnly Deadline { get; set; }
+    public CAPAStatus Status { get; set; }
+    public Guid? PicId { get; set; }
+    public string? PicName { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public List<CAPAActionResponseDto> Actions { get; set; } = new();
+    public CloseOutResponseDto? CloseOut { get; set; }
+}
+
+// Response DTO untuk CAPA Action
+public class CAPAActionResponseDto
+{
+    public Guid Id { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public DateTime DoneAt { get; set; }
+    public Guid? DoneById { get; set; }
+    public string? DoneByName { get; set; }
+    // JANGAN tambahkan properti Capa atau CapaId di sini!
+    // Atau jika perlu CapaId, hanya ID-nya saja:
+    public Guid? CapaId { get; set; }
+}
+
+// Response DTO untuk Close Out Verification
+public class CloseOutResponseDto
+{
+    public Guid Id { get; set; }
+    public bool IsEffective { get; set; }
+    public string VerificationNotes { get; set; } = string.Empty;
+    public DateTime VerifiedAt { get; set; }
+    public Guid? VerifiedById { get; set; }
+    public string? VerifiedByName { get; set; }
+    // JANGAN tambahkan properti Capa di sini!
+    public Guid? CapaId { get; set; } // Hanya ID jika perlu
 }
