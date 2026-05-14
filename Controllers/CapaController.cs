@@ -55,10 +55,22 @@ public class CapaController(AppDbContext db) : ControllerBase
     {
         var finding = await db.Findings.FindAsync(findingId);
         if (finding is null) return NotFound("Finding tidak ditemukan");
+
         if (!req.Deadline.HasValue)
             return BadRequest(new { message = "Deadline wajib diisi" });
+
         if (!req.PicId.HasValue || req.PicId == Guid.Empty)
-            return BadRequest(new { message = "PIC harus diisi dan bukan Guid kosong" });
+        {
+            if (string.IsNullOrEmpty(req.PicName))
+                return BadRequest(new { message = "PIC harus diisi dengan PicId atau PicName" });
+
+            var user = await db.Users
+                .FirstOrDefaultAsync(u => u.FullName == req.PicName);
+            if (user is null)
+                return BadRequest(new { message = "PIC tidak ditemukan berdasarkan nama" });
+
+            req.PicId = user.Id;
+        }
 
         var capa = new CAPA
         {
