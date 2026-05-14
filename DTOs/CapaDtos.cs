@@ -20,6 +20,7 @@ public class CreateCapaRequest
 
     [Required(ErrorMessage = "PIC harus diisi")]
     public Guid? PicId { get; set; }
+    public string? PicName { get; set; }
 }
 
 public class UpdateCapaRequestDto
@@ -39,6 +40,7 @@ public class UpdateCapaRequestDto
     public DateOnly? Deadline { get; set; }
 
     public Guid? PicId { get; set; }
+    public string? PicName { get; set; }
 }
 
 public class AddCapaActionRequest
