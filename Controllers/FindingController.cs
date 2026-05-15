@@ -53,6 +53,34 @@ public class FindingController(AppDbContext db) : ControllerBase
         return Ok(new { total = findings.Count, data = findings });
     }
 
+    // GET /api/Finding/by-session/{sessionId}
+    [HttpGet("by-session/{sessionId:guid}")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor")]
+    public async Task<IActionResult> GetBySession(Guid sessionId)
+    {
+        var findings = await db.Findings
+            .Where(f => f.SessionId == sessionId)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            total = findings.Count,
+            data = findings.Select(f => new
+            {
+                f.Id,
+                f.Title,
+                f.Department,
+                f.Category,
+                f.Description,
+                f.ClauseRef,
+                f.FoundAt,
+                f.Status,
+                f.SessionId,
+                f.ChecklistItemId  // ✅ penting untuk mapping ke checklist item
+            })
+        });
+    }
+
     [HttpPost]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> Create([FromBody] CreateFindingRequest req)
@@ -63,6 +91,7 @@ public class FindingController(AppDbContext db) : ControllerBase
             Title = req.Title,
             Department = req.Department,
             SessionId = req.SessionId,
+            ChecklistItemId = req.ChecklistItemId,
             Category = req.Category!.Value,
             Description = req.Description,
             ClauseRef = req.ClauseRef,

@@ -7,6 +7,7 @@ public class Finding
     public Guid Id { get; set; }
     public Guid? SessionId { get; set; }
     public AuditSession? Session { get; set; }
+    public Guid? ChecklistItemId { get; set; }
     public string Title {get; set; } = string.Empty;
     public string Department { get; set; } = string.Empty;
     public FindingCategory Category { get; set; }
