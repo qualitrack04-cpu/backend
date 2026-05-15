@@ -72,6 +72,7 @@ public class CAPAResponseDto
 {
     public Guid Id { get; set; }
     public Guid FindingId { get; set; }
+    public string FindingTitle { get; set; } = string.Empty;
     public string RootCause { get; set; } = string.Empty;
     public string CorrectiveAction { get; set; } = string.Empty;
     public string? PreventiveAction { get; set; }
