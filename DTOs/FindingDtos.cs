@@ -9,6 +9,7 @@ public class CreateFindingRequest
     public string Title { get; set; } = string.Empty;
     public string Department { get; set; } = string.Empty;
     public Guid? SessionId { get; set; }
+    public Guid? ChecklistItemId { get; set; }
     [Required]
     public FindingCategory? Category { get; set; }
     [Required]
