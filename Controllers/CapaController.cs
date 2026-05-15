@@ -22,6 +22,7 @@ public class CapaController(AppDbContext db) : ControllerBase
             .Include(c => c.Actions)
             .Include(c => c.CloseOut)
             .Include(c => c.Pic)
+            .Include(c => c.Finding)
             .AsQueryable();
 
         if (status.HasValue) query = query.Where(c => c.Status == status);
@@ -42,6 +43,7 @@ public class CapaController(AppDbContext db) : ControllerBase
             .Where(c => c.Deadline < today && c.Status != CAPAStatus.Closed)
             .Include(c => c.Actions)
             .Include(c => c.Pic)
+            .Include(c => c.Finding)
             .ToListAsync();
 
         var response = overdue.Select(c => MapToResponseDto(c)).ToList();
@@ -56,6 +58,7 @@ public class CapaController(AppDbContext db) : ControllerBase
             .Include(c => c.Actions)
             .Include(c => c.CloseOut)
             .Include(c => c.Pic)
+            .Include(c => c.Finding)
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (capa is null) return NotFound();
@@ -239,6 +242,10 @@ public class CapaController(AppDbContext db) : ControllerBase
         {
             Id = capa.Id,
             FindingId = capa.FindingId,
+            FindingTitle = capa.Finding != null
+                ? (string.IsNullOrEmpty(capa.Finding.ClauseRef) ? capa.Finding.Title : $"{capa.Finding.ClauseRef} - {capa.Finding.Title}")
+                    : string.Empty,
+
             RootCause = capa.RootCause,
             CorrectiveAction = capa.CorrectiveAction,
             PreventiveAction = capa.PreventiveAction,
