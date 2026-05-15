@@ -15,14 +15,51 @@ public class ChecklistController(AppDbContext db) : ControllerBase
         var query = db.Checklists.Include(c => c.Items).AsQueryable();
         if (!string.IsNullOrEmpty(standard)) query = query.Where(c => c.Standard == standard);
         if (!string.IsNullOrEmpty(department)) query = query.Where(c => c.Department == department);
-        return Ok(await query.ToListAsync());
+
+        var result = (await query.ToListAsync()).Select(c => new
+        {
+            c.Id,
+            c.Title,
+            c.Standard,
+            c.Department,
+            c.CreatedAt,
+            TotalItems = c.Items.Select(i => new
+            {
+                i.Id,
+                i.Question,
+                i.Description,
+                i.ClauseRef,
+                i.OrderIndex
+            })
+        });
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var checklist = await db.Checklists.Include(c => c.Items).FirstOrDefaultAsync(c => c.Id == id);
-        return checklist is null ? NotFound() : Ok(checklist);
+        var checklist = await db.Checklists
+            .Include(c => c.Items)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (checklist is null) return NotFound();
+
+        return Ok(new
+        {
+            checklist.Id,
+            checklist.Title,
+            checklist.Standard,
+            checklist.Department,
+            checklist.CreatedAt,
+            Items = checklist.Items.Select(i => new
+            {
+                i.Id,
+                i.Question,
+                i.Description,
+                i.ClauseRef,
+                i.OrderIndex
+            })
+        });
     }
 
     [HttpPost]

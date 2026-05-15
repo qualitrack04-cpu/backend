@@ -147,7 +147,8 @@ public class AuditPlanController : ControllerBase
         _db.AuditPlans.Add(plan);
         await _db.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = plan.Id }, new { message = "Audit plan berhasil dibuat", data = plan });
+        return CreatedAtAction(nameof(GetById), new { id = plan.Id }, 
+            new { message = "Audit plan berhasil dibuat", data = new { plan.Id, plan.Title} });
     }
 
     [HttpPut("{id}")]
@@ -194,8 +195,29 @@ public class AuditPlanController : ControllerBase
         }
         
         await _db.SaveChangesAsync();
+
+        var result = new AuditPlanResponseDto
+        {
+            Id = plan.Id,
+            Title = plan.Title,
+            Year = plan.Year,
+            Standard = plan.Standard,
+            CreatedAt = plan.CreatedAt,
+            Description = plan.Description,
+            Priority = plan.Priority,
+            TotalSchedules = plan.Schedules.Count,
+            Schedules = plan.Schedules.Select(s => new ScheduleResponseDto
+            {
+                Id = s.Id,
+                ClauseRef = s.ClauseRef,
+                AuditorId = s.AuditorId ?? Guid.Empty,
+                AuditorName = s.AuditorName,
+                ScheduledDate = s.ScheduledDate,
+                Department = s.Department
+            }).ToList()
+        };
         
-        return Ok(new { message = "Audit plan berhasil diupdate", data = plan });
+        return Ok(new { message = "Audit plan berhasil diupdate", data = result });
     }
 
     [HttpDelete("{id}")]
