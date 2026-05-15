@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;  
 namespace QualiTrack.DTOs;
 
 using QualiTrack.Models;
@@ -36,5 +37,17 @@ public class AuditResponseItemDto
 {
     public Guid ChecklistItemId { get; set; }
     public bool IsPassed { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class SaveProgressDto
+{
+    [Required]
+    public Guid SessionId { get; set; }
+
+    [Required]
+    public Guid ChecklistItemId { get; set; }
+    public bool IsPassed { get; set; }
+
     public string? Notes { get; set; }
 }
