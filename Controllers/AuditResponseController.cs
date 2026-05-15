@@ -59,6 +59,48 @@ public class AuditResponseController : ControllerBase
         });
     }
 
+    // POST /api/AuditResponse/progress
+// Simpan satu jawaban — dipanggil setiap user jawab satu item
+    [HttpPost("progress")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor")]
+    public async Task<IActionResult> SaveProgress([FromBody] SaveProgressDto dto)
+    {
+        var session = await _db.AuditSessions.FindAsync(dto.SessionId);
+        if (session is null)
+            return NotFound(new { message = $"Session {dto.SessionId} tidak ditemukan" });
+
+        if (session.Status == AuditSessionStatus.Completed)
+            return BadRequest(new { message = "Session sudah selesai" });
+
+        // Cek apakah sudah ada jawaban untuk item ini
+        var existing = await _db.AuditResponses
+            .FirstOrDefaultAsync(r => r.SessionId == dto.SessionId 
+                                && r.ChecklistItemId == dto.ChecklistItemId);
+
+        if (existing is not null)
+        {
+            // Update jawaban yang sudah ada
+            existing.Answer = dto.IsPassed ? ResponseAnswer.Conform : ResponseAnswer.NotConform;
+            existing.Notes = dto.Notes;
+        }
+        else
+        {
+            // Buat jawaban baru
+            _db.AuditResponses.Add(new AuditResponse
+            {
+                Id = Guid.NewGuid(),
+                SessionId = dto.SessionId,
+                ChecklistItemId = dto.ChecklistItemId,
+                Answer = dto.IsPassed ? ResponseAnswer.Conform : ResponseAnswer.NotConform,
+                Notes = dto.Notes
+            });
+        }
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Progress tersimpan" });
+    }
+
     // GET /api/AuditResponse/by-session/{sessionId}
     [HttpGet("by-session/{sessionId:guid}")]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
