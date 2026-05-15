@@ -72,6 +72,10 @@ public class AuditResponseController : ControllerBase
         if (session.Status == AuditSessionStatus.Completed)
             return BadRequest(new { message = "Session sudah selesai" });
 
+        var checkListItem = await _db.ChecklistItems.FindAsync(dto.ChecklistItemId);
+        if (checkListItem is null)
+            return NotFound(new { message = $"Checklist item {dto.ChecklistItemId} tidak ditemukan" });
+        
         // Cek apakah sudah ada jawaban untuk item ini
         var existing = await _db.AuditResponses
             .FirstOrDefaultAsync(r => r.SessionId == dto.SessionId 
