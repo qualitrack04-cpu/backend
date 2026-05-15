@@ -99,7 +99,14 @@ public class ChecklistController(AppDbContext db) : ControllerBase
             standard = checklist.Standard,
             department = checklist.Department,
             totalItems = checklist.Items.Count,
-            items = checklist.Items
+            items = checklist.Items.Select(i => new
+            {
+                i.Id, 
+                i.Question,
+                i.Description,
+                i.ClauseRef,
+                i.OrderIndex
+            })
         });
     }
 }
