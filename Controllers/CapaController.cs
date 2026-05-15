@@ -245,6 +245,7 @@ public class CapaController(AppDbContext db) : ControllerBase
             FindingTitle = capa.Finding != null
                 ? (string.IsNullOrEmpty(capa.Finding.ClauseRef) ? capa.Finding.Title : $"{capa.Finding.ClauseRef} - {capa.Finding.Title}")
                     : string.Empty,
+            FindingCategory = capa.Finding != null ? capa.Finding.Category.ToString() : string.Empty,
 
             RootCause = capa.RootCause,
             CorrectiveAction = capa.CorrectiveAction,
