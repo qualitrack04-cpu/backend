@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using QualiTrack.Data;
 using QualiTrack.Models;
@@ -88,6 +89,23 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
             .ToListAsync();
 
         return Ok(files);
+    }
+
+    [HttpDelete("{fileId}")]
+    [Authorize]
+    public async Task<IActionResult> Delete(Guid fileId)
+    {
+        var evidence = await db.EvidenceFiles.FindAsync(fileId);
+        if (evidence is null) return NotFound(new { message = "File tidak ditemukan" });
+
+        // Hapus file fisik dari disk
+        if (!string.IsNullOrEmpty(evidence.StoragePath) && System.IO.File.Exists(evidence.StoragePath))
+            System.IO.File.Delete(evidence.StoragePath);
+
+        db.EvidenceFiles.Remove(evidence);
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "File berhasil dihapus", fileId = fileId });
     }
 
     private async Task<string?> SaveFile(IFormFile file)
