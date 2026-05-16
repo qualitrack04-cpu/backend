@@ -8,11 +8,13 @@ using System.Text;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
 using QualiTrack.Models;
+using QualiTrack.Filters;
 
 namespace QualiTrack.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[ValidateModelAttribute]
 public class AuthController(AppDbContext db, IConfiguration config) : ControllerBase
 {
     private static readonly string[] ValidRoles = ["QualityManager", "Auditor", "Auditee", "Admin"];
