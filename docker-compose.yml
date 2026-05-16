@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: qualitrack_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qualitrack
+      POSTGRES_USER: qualitrack_user
+      POSTGRES_PASSWORD: QualiTrack@2025!
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - qualitrack_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qualitrack_user -d qualitrack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: qualitrack_api
+    restart: unless-stopped
+    ports:
+      - "5144:5144"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5144
+      - ConnectionStrings__Supabase=Host=db;Port=5432;Database=qualitrack;Username=qualitrack_user;Password=QualiTrack@2025!
+      - Jwt__Key=${JWT_SECRET}
+      - Jwt__Issuer=QualiTrack
+      - Jwt__Audience=QualiTrack
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - qualitrack_net
+
+volumes:
+  postgres_data:
+  uploads_data:
+  dataprotection_keys:
+
+networks:
+  qualitrack_net:
+    driver: bridge
