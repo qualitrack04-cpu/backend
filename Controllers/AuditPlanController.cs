@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Protocols;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
 using QualiTrack.Filters;
@@ -167,8 +168,36 @@ public class AuditPlanController : ControllerBase
         plan.Standard = updatedPlanDto.Standard;
         plan.Description = updatedPlanDto.Description;
         plan.Priority = updatedPlanDto.Priority;
+
         if (updatedPlanDto.Schedules is not null)
         {
+            var scheduleIds = plan.Schedules.Select(s => s.Id).ToList();
+            
+            if (scheduleIds.Any())
+            {
+                var sessions = await _db.AuditSessions
+                .Where(s => scheduleIds.Contains(s.ScheduleId))
+                .ToListAsync();
+
+                var sessionIds = sessions.Select(s => s.Id).ToList();
+
+                if (sessionIds.Any())
+                {
+                     var finding = await _db.Findings
+                        .Where(f => f.SessionId.HasValue && sessionIds.Contains(f.SessionId.Value))
+                        .ToListAsync();
+                    _db.Findings.RemoveRange(finding);
+
+                    var responses = await _db.AuditResponses
+                        .Where(r => sessionIds.Contains (r.SessionId))
+                        .ToListAsync();
+
+                    _db.AuditResponses.RemoveRange(responses);
+
+                    _db.AuditSessions.RemoveRange(sessions);
+                }
+            }
+            
             _db.AuditSchedules.RemoveRange(plan.Schedules);
             var newSchedules = new List<AuditSchedule>();
             foreach (var scheduleDto in updatedPlanDto.Schedules)
@@ -224,11 +253,40 @@ public class AuditPlanController : ControllerBase
     [Authorize(Roles = "Admin,QualityManager")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var plan = await _db.AuditPlans.FindAsync(id);
+        var plan = await _db.AuditPlans
+            .Include(a => a.Schedules)
+            .FirstOrDefaultAsync(a => a.Id == id);
         
         if (plan is null)
             return NotFound(new { message = $"Audit plan dengan ID {id} tidak ditemukan", id = id });
         
+        var scheduleIds = plan.Schedules.Select(s => s.Id).ToList();
+
+        if (scheduleIds.Any())
+        {
+            var sessions = await _db.AuditSessions
+                .Where(s => scheduleIds.Contains(s.ScheduleId))
+                .ToListAsync();
+
+            var sessionIds = sessions.Select(s => s.Id).ToList();
+
+            if (sessionIds.Any())
+            {
+                var findings = await _db.Findings
+                    .Where(f => f.SessionId.HasValue && sessionIds.Contains(f.SessionId.Value))
+                    .ToListAsync();
+                _db.Findings.RemoveRange(findings);
+
+                var responses = await _db.AuditResponses
+                    .Where(r => sessionIds.Contains(r.SessionId))
+                    .ToListAsync();
+                _db.AuditResponses.RemoveRange(responses);
+
+                _db.AuditSessions.RemoveRange(sessions);
+            }
+        }
+
+        _db.AuditSchedules.RemoveRange(plan.Schedules);
         _db.AuditPlans.Remove(plan);
         await _db.SaveChangesAsync();
         
