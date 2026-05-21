@@ -44,6 +44,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddScoped<QualiTrack.Services.IEmailService, QualiTrack.Services.EmailService>();
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
 
 builder.Services.AddScoped<ValidateUserFilter>();

@@ -20,6 +20,11 @@ public class User
     public string Role { get; set; } = "QualityManager";
     
     public string Status { get; set; } = "Active";
+
+    public bool EmailVerified { get; set; } = false;
+	
+    public string? OtpCode { get; set; }
+    public DateTime? OtpExpiry { get; set; }
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

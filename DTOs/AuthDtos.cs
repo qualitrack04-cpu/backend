@@ -41,3 +41,16 @@ public record ForgotPasswordRequest(
     string NewPassword,
     string ConfirmPassword
 );
+public record RequestOtpRequest(string Email);
+
+public record VerifyOtpRequest(string Email, string Otp);
+
+public record ResetPasswordRequest(
+    string Email,
+    string ResetToken,
+    string NewPassword,
+    string ConfirmPassword
+);
+
+public record VerifyEmailRequest(string Email, string Otp);
+public record ResendOtpRequest(string Email);
