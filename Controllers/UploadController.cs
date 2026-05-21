@@ -1,17 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using SkiaSharp;
 using QualiTrack.Data;
 using QualiTrack.Models;
-using QualiTrack.DTOs;
-
-namespace QualiTrack.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 public class UploadController(AppDbContext db, IWebHostEnvironment env) : ControllerBase
 {
     private readonly string[] _allowedTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
+    private const int MaxImageWidth = 1280;
+    private const int JpegQuality = 75;
 
     [HttpPost("finding/{findingId}")]
     public async Task<IActionResult> UploadForFinding(Guid findingId, IFormFile file)
@@ -26,20 +25,22 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
         {
             Id = Guid.NewGuid(),
             FileName = file.FileName,
-            StoragePath = result,
+            StoragePath = result.Value.path,
             ContentType = file.ContentType,
-            FileSizeBytes = file.Length,
-            UploadedAt = DateTime.UtcNow,
-            FindingId = findingId
+            FileSizeBytes = result.Value.size,
+            UploadedAt = DateTime.UtcNow
         };
 
         db.EvidenceFiles.Add(evidence);
         await db.SaveChangesAsync();
 
-        return Ok(new { 
+        return Ok(new {
             fileId = evidence.Id,
             fileName = evidence.FileName,
-            url = $"/uploads/{Path.GetFileName(result)}"
+            url = $"/uploads/{Path.GetFileName(result.Value.path)}",
+            originalSize = file.Length,
+            compressedSize = result.Value.size,
+            savedPercent = Math.Round((1 - (double)result.Value.size / file.Length) * 100, 1)
         });
     }
 
@@ -56,9 +57,9 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
         {
             Id = Guid.NewGuid(),
             FileName = file.FileName,
-            StoragePath = result,
+            StoragePath = result.Value.path,
             ContentType = file.ContentType,
-            FileSizeBytes = file.Length,
+            FileSizeBytes = result.Value.size,
             UploadedAt = DateTime.UtcNow,
             CapaActionId = actionId
         };
@@ -69,58 +70,67 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
         return Ok(new {
             fileId = evidence.Id,
             fileName = evidence.FileName,
-            url = $"/uploads/{Path.GetFileName(result)}"
+            url = $"/uploads/{Path.GetFileName(result.Value.path)}",
+            originalSize = file.Length,
+            compressedSize = result.Value.size,
+            savedPercent = Math.Round((1 - (double)result.Value.size / file.Length) * 100, 1)
         });
     }
 
     [HttpGet("finding/{findingId}")]
     public async Task<IActionResult> GetFindingFiles(Guid findingId)
     {
-        var baseUrl = $"{Request.Scheme}://{Request.Host}";
-
         var files = await db.EvidenceFiles
-            .Where(e => e.FindingId == findingId)
-            .Select( e => new
-            {
-                id = e.Id,
-                fileName = e.FileName,
-                url = $"{baseUrl}/uploads/{Path.GetFileName(e.StoragePath)}"
-            })
+            .Where(e => e.AuditResponseId == null && e.CapaActionId == null)
             .ToListAsync();
-
         return Ok(files);
     }
 
-    [HttpDelete("{fileId}")]
-    [Authorize]
-    public async Task<IActionResult> Delete(Guid fileId)
-    {
-        var evidence = await db.EvidenceFiles.FindAsync(fileId);
-        if (evidence is null) return NotFound(new { message = "File tidak ditemukan" });
-
-        // Hapus file fisik dari disk
-        if (!string.IsNullOrEmpty(evidence.StoragePath) && System.IO.File.Exists(evidence.StoragePath))
-            System.IO.File.Delete(evidence.StoragePath);
-
-        db.EvidenceFiles.Remove(evidence);
-        await db.SaveChangesAsync();
-
-        return Ok(new { message = "File berhasil dihapus", fileId = fileId });
-    }
-
-    private async Task<string?> SaveFile(IFormFile file)
+    private async Task<(string path, long size)?> SaveFile(IFormFile file)
     {
         if (!_allowedTypes.Contains(file.ContentType)) return null;
 
         var uploadPath = Path.Combine(env.ContentRootPath, "uploads");
         Directory.CreateDirectory(uploadPath);
 
-        var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+        // PDF langsung simpan tanpa kompresi
+        if (file.ContentType == "application/pdf")
+        {
+            var pdfFileName = $"{Guid.NewGuid()}.pdf";
+            var pdfPath = Path.Combine(uploadPath, pdfFileName);
+            using var pdfStream = new FileStream(pdfPath, FileMode.Create);
+            await file.CopyToAsync(pdfStream);
+            return (pdfPath, file.Length);
+        }
+
+        // Gambar — kompres dengan SkiaSharp
+        var fileName = $"{Guid.NewGuid()}.jpg";
         var filePath = Path.Combine(uploadPath, fileName);
 
-        using var stream = new FileStream(filePath, FileMode.Create);
-        await file.CopyToAsync(stream);
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms);
+        ms.Position = 0;
 
-        return filePath;
+        using var original = SKBitmap.Decode(ms.ToArray());
+        if (original is null) return null;
+
+        // Resize kalau lebih lebar dari MaxImageWidth
+        SKBitmap bitmap = original;
+        if (original.Width > MaxImageWidth)
+        {
+            var ratio = (float)MaxImageWidth / original.Width;
+            var newHeight = (int)(original.Height * ratio);
+            bitmap = original.Resize(new SKImageInfo(MaxImageWidth, newHeight), SKFilterQuality.High);
+        }
+
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, JpegQuality);
+        using var output = new FileStream(filePath, FileMode.Create);
+        data.SaveTo(output);
+
+        if (bitmap != original) bitmap.Dispose();
+
+        var fileInfo = new FileInfo(filePath);
+        return (filePath, fileInfo.Length);
     }
 }
