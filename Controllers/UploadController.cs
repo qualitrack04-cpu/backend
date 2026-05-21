@@ -1,12 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SkiaSharp;
 using QualiTrack.Data;
 using QualiTrack.Models;
+using QualiTrack.Services;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UploadController(AppDbContext db, IWebHostEnvironment env) : ControllerBase
+public class UploadController(AppDbContext db, S3StorageService s3Service) : ControllerBase
 {
     private readonly string[] _allowedTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
     private const int MaxImageWidth = 1280;
@@ -18,17 +19,18 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
         var finding = await db.Findings.FindAsync(findingId);
         if (finding is null) return NotFound("Finding tidak ditemukan");
 
-        var result = await SaveFile(file);
-        if (result is null) return BadRequest("Format file tidak didukung. Gunakan JPG, PNG, atau PDF");
+        var url = await s3Service.UploadFileAsync(file);
+        if (url is null) return BadRequest("Format file tidak didukung. Gunakan JPG, PNG, atau PDF");
 
         var evidence = new EvidenceFile
         {
             Id = Guid.NewGuid(),
             FileName = file.FileName,
-            StoragePath = result.Value.path,
+            StoragePath = url,
             ContentType = file.ContentType,
-            FileSizeBytes = result.Value.size,
-            UploadedAt = DateTime.UtcNow
+            FileSizeBytes = file.Length,
+            UploadedAt = DateTime.UtcNow,
+            FindingId = findingId
         };
 
         db.EvidenceFiles.Add(evidence);
@@ -37,10 +39,7 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
         return Ok(new {
             fileId = evidence.Id,
             fileName = evidence.FileName,
-            url = $"/uploads/{Path.GetFileName(result.Value.path)}",
-            originalSize = file.Length,
-            compressedSize = result.Value.size,
-            savedPercent = Math.Round((1 - (double)result.Value.size / file.Length) * 100, 1)
+            url = url
         });
     }
 
@@ -50,16 +49,16 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
         var action = await db.CAPAActions.FindAsync(actionId);
         if (action is null) return NotFound("CAPA Action tidak ditemukan");
 
-        var result = await SaveFile(file);
-        if (result is null) return BadRequest("Format file tidak didukung. Gunakan JPG, PNG, atau PDF");
+        var url = await s3Service.UploadFileAsync(file);
+        if (url is null) return BadRequest("Format file tidak didukung. Gunakan JPG, PNG, atau PDF");
 
         var evidence = new EvidenceFile
         {
             Id = Guid.NewGuid(),
             FileName = file.FileName,
-            StoragePath = result.Value.path,
+            StoragePath = url,
             ContentType = file.ContentType,
-            FileSizeBytes = result.Value.size,
+            FileSizeBytes = file.Length,
             UploadedAt = DateTime.UtcNow,
             CapaActionId = actionId
         };
@@ -70,10 +69,10 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
         return Ok(new {
             fileId = evidence.Id,
             fileName = evidence.FileName,
-            url = $"/uploads/{Path.GetFileName(result.Value.path)}",
+            url = url,
             originalSize = file.Length,
-            compressedSize = result.Value.size,
-            savedPercent = Math.Round((1 - (double)result.Value.size / file.Length) * 100, 1)
+            compressedSize = file.Length,
+            savedPercent = 0
         });
     }
 
@@ -81,56 +80,31 @@ public class UploadController(AppDbContext db, IWebHostEnvironment env) : Contro
     public async Task<IActionResult> GetFindingFiles(Guid findingId)
     {
         var files = await db.EvidenceFiles
-            .Where(e => e.AuditResponseId == null && e.CapaActionId == null)
+            .Where(e => e.FindingId == findingId)
+            .Select(e => new
+            {
+                id = e.Id,
+                fileName = e.FileName,
+                url = e.StoragePath,
+            })
             .ToListAsync();
+
         return Ok(files);
     }
 
-    private async Task<(string path, long size)?> SaveFile(IFormFile file)
+    [HttpDelete("{fileId}")]
+    [Authorize]
+    public async Task<IActionResult> Delete(Guid fileId)
     {
-        if (!_allowedTypes.Contains(file.ContentType)) return null;
+        var evidence = await db.EvidenceFiles.FindAsync(fileId);
+        if (evidence is null) return NotFound(new { message = "File tidak ditemukan" });
 
-        var uploadPath = Path.Combine(env.ContentRootPath, "uploads");
-        Directory.CreateDirectory(uploadPath);
+        if (!string.IsNullOrEmpty(evidence.StoragePath))
+            await s3Service.DeleteFileAsync(evidence.StoragePath);
 
-        // PDF langsung simpan tanpa kompresi
-        if (file.ContentType == "application/pdf")
-        {
-            var pdfFileName = $"{Guid.NewGuid()}.pdf";
-            var pdfPath = Path.Combine(uploadPath, pdfFileName);
-            using var pdfStream = new FileStream(pdfPath, FileMode.Create);
-            await file.CopyToAsync(pdfStream);
-            return (pdfPath, file.Length);
-        }
+        db.EvidenceFiles.Remove(evidence);
+        await db.SaveChangesAsync();
 
-        // Gambar — kompres dengan SkiaSharp
-        var fileName = $"{Guid.NewGuid()}.jpg";
-        var filePath = Path.Combine(uploadPath, fileName);
-
-        using var ms = new MemoryStream();
-        await file.CopyToAsync(ms);
-        ms.Position = 0;
-
-        using var original = SKBitmap.Decode(ms.ToArray());
-        if (original is null) return null;
-
-        // Resize kalau lebih lebar dari MaxImageWidth
-        SKBitmap bitmap = original;
-        if (original.Width > MaxImageWidth)
-        {
-            var ratio = (float)MaxImageWidth / original.Width;
-            var newHeight = (int)(original.Height * ratio);
-            bitmap = original.Resize(new SKImageInfo(MaxImageWidth, newHeight), SKFilterQuality.High);
-        }
-
-        using var image = SKImage.FromBitmap(bitmap);
-        using var data = image.Encode(SKEncodedImageFormat.Jpeg, JpegQuality);
-        using var output = new FileStream(filePath, FileMode.Create);
-        data.SaveTo(output);
-
-        if (bitmap != original) bitmap.Dispose();
-
-        var fileInfo = new FileInfo(filePath);
-        return (filePath, fileInfo.Length);
+        return Ok(new { message = "File berhasil dihapus", fileId = fileId });
     }
 }
