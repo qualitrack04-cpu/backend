@@ -32,10 +32,9 @@ public class AuditPlanController : ControllerBase
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
 
-        var completedScheduleIds = await _db.AuditSessions
-            .Where(s => s.Status ==AuditSessionStatus.Completed)
-            .Select(s => s.ScheduleId)
-            .ToListAsync();
+        var completedTimes = await _db.AuditSessions
+            .Where(s => s.Status == AuditSessionStatus.Completed)
+            .ToDictionaryAsync(s => s.ScheduleId, s => s.CompletedAt);
 
         var result = plans.Select(plan => new AuditPlanResponseDto
         {
@@ -58,7 +57,8 @@ public class AuditPlanController : ControllerBase
                 ScheduledDate = s.ScheduledDate,
                 Department = s.Department,
 
-                IsFinished = completedScheduleIds.Contains(s.Id)
+                IsFinished = completedTimes.ContainsKey(s.Id),
+                CompletedAt = completedTimes.GetValueOrDefault(s.Id)
             }).ToList()
         });
         
@@ -77,6 +77,10 @@ public class AuditPlanController : ControllerBase
         if (plan is null)
             return NotFound(new { message = $"Audit plan dengan ID {id} tidak ditemukan", id = id });
         
+        var CompletedTimes = await _db.AuditSessions
+            .Where(s => s.Status == AuditSessionStatus.Completed)
+            .ToDictionaryAsync(s => s.ScheduleId, s => s.CompletedAt);
+
         var result = new AuditPlanResponseDto
         {
             Id = plan.Id,
@@ -96,7 +100,9 @@ public class AuditPlanController : ControllerBase
                     ? s.Auditor.FullName
                     : s.AuditorName,  // Fallback ke AuditorName jika join gagal
                 ScheduledDate = s.ScheduledDate,
-                Department = s.Department
+                Department = s.Department,
+                IsFinished = CompletedTimes.ContainsKey(s.Id),
+                CompletedAt = CompletedTimes.GetValueOrDefault(s.Id)
             }).ToList()
         };
 
@@ -225,6 +231,10 @@ public class AuditPlanController : ControllerBase
         
         await _db.SaveChangesAsync();
 
+        var completedTimes = await _db.AuditSessions
+            .Where(s => s.Status == AuditSessionStatus.Completed)
+            .ToDictionaryAsync(s => s.ScheduleId, s => s.CompletedAt);
+
         var result = new AuditPlanResponseDto
         {
             Id = plan.Id,
@@ -242,7 +252,9 @@ public class AuditPlanController : ControllerBase
                 AuditorId = s.AuditorId ?? Guid.Empty,
                 AuditorName = s.AuditorName,
                 ScheduledDate = s.ScheduledDate,
-                Department = s.Department
+                Department = s.Department,
+                IsFinished = completedTimes.ContainsKey(s.Id),
+                CompletedAt = completedTimes.GetValueOrDefault(s.Id)
             }).ToList()
         };
         
