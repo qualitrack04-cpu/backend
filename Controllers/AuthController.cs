@@ -9,12 +9,15 @@ using QualiTrack.Data;
 using QualiTrack.DTOs;
 using QualiTrack.Models;
 using QualiTrack.Services;
+using QualiTrack.Filters;
 
 namespace QualiTrack.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(AppDbContext db, IConfiguration config, IEmailService emailService) : ControllerBase
+[ValidateModelAttribute]
+// Add Email Service on the parameter when adding SMTP : IEmailService emailService
+public class AuthController(AppDbContext db, IConfiguration config) : ControllerBase
 {
     private static readonly string[] ValidRoles = ["QualityManager", "Auditor", "Auditee", "Admin"];
 
@@ -39,9 +42,9 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
             Role = req.Role,
             // TODO akhir Sprint 2: ganti Status = "Pending" dan EmailVerified = false setelah email service siap
             Status = "Active",
-            EmailVerified = true,
-            OtpCode = null,
-            OtpExpiry = null,
+            // EmailVerified = true,
+            // OtpCode = null,
+            // OtpExpiry = null,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -86,82 +89,119 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         });
     }
 
+    [HttpGet("auditors")]
+    [Authorize(Roles = "Admin,QualityManager")]
+    public async Task<IActionResult> GetAuditors()
+    {
+        var auditors = await db.Users
+            .Where(u => u.Role == "Auditor" || u.Role == "QualityManager")
+            .Select(u => new { u.Id, u.FullName, u.Role })
+            .ToListAsync();
+
+        return Ok(new { message = "Daftar auditor berhasil diambil", total = auditors.Count, data = auditors });
+    }
+
+    [HttpGet("users")]
+    [Authorize(Roles = "Admin,QualityManager")]
+    public async Task<IActionResult> GetUsers([FromQuery] string? role)
+    {
+        var query = db.Users.AsQueryable();
+        
+        if (!string.IsNullOrEmpty(role))
+            query = query.Where(u => u.Role == role);
+
+        var users = await query
+            .Select(u => new { u.Id, u.FullName, u.Email, u.Role, u.Status })
+            .ToListAsync();
+
+        return Ok(new { message = "Daftar user berhasil diambil", total = users.Count, data = users });
+    }
+
     [HttpPost("logout")]
     public IActionResult Logout()
     {
         return Ok(new { message = "Logout berhasil" });
     }
 
-    [HttpPost("forgot-password/request-otp")]
-    public async Task<IActionResult> RequestOtp([FromBody] RequestOtpRequest req)
+    // [HttpPost("forgot-password/request-otp")]
+    // public async Task<IActionResult> RequestOtp([FromBody] RequestOtpRequest req)
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest req)
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
-        if (user is null)
-            return NotFound(new { message = "Email tidak ditemukan" });
-
-        var otp = new Random().Next(100000, 999999).ToString();
-        user.OtpCode = BCrypt.Net.BCrypt.HashPassword(otp);
-        user.OtpExpiry = DateTime.UtcNow.AddMinutes(5);
-        await db.SaveChangesAsync();
-
-        await emailService.SendOtpAsync(user.Email, otp);
-
-        return Ok(new { message = "Kode OTP telah dikirim ke email kamu" });
-    }
-
-    [HttpPost("forgot-password/verify-otp")]
-    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest req)
-    {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
-        if (user is null)
-            return NotFound(new { message = "Email tidak ditemukan" });
-
-        if (user.OtpCode is null || user.OtpExpiry is null)
-            return BadRequest(new { message = "OTP belum di-request" });
-
-        if (DateTime.UtcNow > user.OtpExpiry)
-            return BadRequest(new { message = "OTP sudah kadaluarsa, minta OTP baru" });
-
-        if (!BCrypt.Net.BCrypt.Verify(req.Otp, user.OtpCode))
-            return BadRequest(new { message = "OTP tidak valid" });
-
-        var resetToken = Guid.NewGuid().ToString();
-        user.OtpCode = resetToken;
-        user.OtpExpiry = DateTime.UtcNow.AddMinutes(10);
-        await db.SaveChangesAsync();
-
-        return Ok(new { message = "OTP valid", resetToken = resetToken });
-    }
-
-    [HttpPost("forgot-password/reset")]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest req)
-    {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
-        if (user is null)
-            return NotFound(new { message = "Email tidak ditemukan" });
-
-        if (user.OtpCode is null || user.OtpExpiry is null)
-            return BadRequest(new { message = "Reset token tidak valid" });
-
-        if (DateTime.UtcNow > user.OtpExpiry)
-            return BadRequest(new { message = "Reset token sudah kadaluarsa" });
-
-        if (user.OtpCode != req.ResetToken)
-            return BadRequest(new { message = "Reset token tidak valid" });
-
         if (req.NewPassword.Length < 6)
             return BadRequest(new { message = "Password minimal 6 karakter" });
 
         if (string.Equals(req.NewPassword, req.ConfirmPassword) == false)
             return BadRequest(new { message = "Password dan konfirmasi password tidak sama" });
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
+        if (user is null)
+            return NotFound(new { message = "Email tidak ditemukan" });
 
+        // var otp = new Random().Next(100000, 999999).ToString();
+        // user.OtpCode = BCrypt.Net.BCrypt.HashPassword(otp);
+        // user.OtpExpiry = DateTime.UtcNow.AddMinutes(5);
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
-        user.OtpCode = null;
-        user.OtpExpiry = null;
         await db.SaveChangesAsync();
 
-        return Ok(new { message = "Password berhasil direset, silakan login" });
+        // await emailService.SendOtpAsync(user.Email, otp);
+
+        // return Ok(new { message = "Kode OTP telah dikirim ke email kamu" });
+        return Ok(new { message = "Password berhsil direset" });
     }
+
+    // [HttpPost("forgot-password/verify-otp")]
+    // public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest req)
+    // {
+    //     var user = await db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
+    //     if (user is null)
+    //         return NotFound(new { message = "Email tidak ditemukan" });
+
+    //     if (user.OtpCode is null || user.OtpExpiry is null)
+    //         return BadRequest(new { message = "OTP belum di-request" });
+
+    //     if (DateTime.UtcNow > user.OtpExpiry)
+    //         return BadRequest(new { message = "OTP sudah kadaluarsa, minta OTP baru" });
+
+    //     if (!BCrypt.Net.BCrypt.Verify(req.Otp, user.OtpCode))
+    //         return BadRequest(new { message = "OTP tidak valid" });
+
+    //     var resetToken = Guid.NewGuid().ToString();
+    //     user.OtpCode = resetToken;
+    //     user.OtpExpiry = DateTime.UtcNow.AddMinutes(10);
+    //     await db.SaveChangesAsync();
+
+    //     return Ok(new { message = "OTP valid", resetToken = resetToken });
+    // }
+
+    // [HttpPost("forgot-password/reset")]
+    // public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest req)
+    // {
+    //     var user = await db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
+    //     if (user is null)
+    //         return NotFound(new { message = "Email tidak ditemukan" });
+
+    //     if (user.OtpCode is null || user.OtpExpiry is null)
+    //         return BadRequest(new { message = "Reset token tidak valid" });
+
+    //     if (DateTime.UtcNow > user.OtpExpiry)
+    //         return BadRequest(new { message = "Reset token sudah kadaluarsa" });
+
+    //     if (user.OtpCode != req.ResetToken)
+    //         return BadRequest(new { message = "Reset token tidak valid" });
+
+    //     if (req.NewPassword.Length < 6)
+    //         return BadRequest(new { message = "Password minimal 6 karakter" });
+
+    //     if (string.Equals(req.NewPassword, req.ConfirmPassword) == false)
+    //         return BadRequest(new { message = "Password dan konfirmasi password tidak sama" });
+
+    //     user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
+    //     user.OtpCode = null;
+    //     user.OtpExpiry = null;
+    //     await db.SaveChangesAsync();
+
+    //     return Ok(new { message = "Password berhasil direset, silakan login" });
+    // }
 
     private string GenerateJwt(User user)
     {
@@ -187,15 +227,5 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    [HttpGet("auditors")]
-    [Authorize]
-    public async Task<IActionResult> GetAuditors()
-    {
-        var auditors = await db.Users
-            .Where(u => u.Role == "Auditor")
-            .Select(u => new { u.Id, u.FullName, u.Email })
-            .ToListAsync();
 
-        return Ok(new { message = "Data auditor berhasil diambil", data = auditors });
-    }
 }
