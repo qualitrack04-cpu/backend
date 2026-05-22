@@ -186,4 +186,16 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    [HttpGet("auditors")]
+    [Authorize]
+    public async Task<IActionResult> GetAuditors()
+    {
+        var auditors = await db.Users
+            .Where(u => u.Role == "Auditor")
+            .Select(u => new { u.Id, u.FullName, u.Email })
+            .ToListAsync();
+
+        return Ok(new { message = "Data auditor berhasil diambil", data = auditors });
+    }
 }
