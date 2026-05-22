@@ -30,9 +30,6 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         if (await db.Users.AnyAsync(u => u.Email == req.Email))
             return BadRequest(new { message = "Email sudah terdaftar" });
 
-        // Generate OTP
-        var otp = new Random().Next(100000, 999999).ToString();
-
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -40,72 +37,26 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
             Email = req.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
             Role = req.Role,
-            Status = "Pending",
-            EmailVerified = false,
-            OtpCode = BCrypt.Net.BCrypt.HashPassword(otp),
-            OtpExpiry = DateTime.UtcNow.AddMinutes(5),
+            // TODO akhir Sprint 2: ganti Status = "Pending" dan EmailVerified = false setelah email service siap
+            Status = "Active",
+            EmailVerified = true,
+            OtpCode = null,
+            OtpExpiry = null,
             CreatedAt = DateTime.UtcNow
         };
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        // Kirim OTP ke email
-        await emailService.SendRegistrationOtpAsync(user.Email, otp);
-
-        return Ok(new { 
-            message = "Registrasi berhasil! Cek email kamu untuk kode verifikasi.",
+        return Ok(new {
+            message = "Registrasi berhasil! Silakan login.",
             email = user.Email
         });
     }
 
-    [HttpPost("verify-email")]
-    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest req)
-    {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
-        if (user is null)
-            return NotFound(new { message = "Email tidak ditemukan" });
-
-        if (user.EmailVerified)
-            return BadRequest(new { message = "Email sudah terverifikasi, silakan login" });
-
-        if (user.OtpCode is null || user.OtpExpiry is null)
-            return BadRequest(new { message = "OTP tidak valid" });
-
-        if (DateTime.UtcNow > user.OtpExpiry)
-            return BadRequest(new { message = "OTP sudah kadaluarsa, minta OTP baru" });
-
-        if (!BCrypt.Net.BCrypt.Verify(req.Otp, user.OtpCode))
-            return BadRequest(new { message = "OTP tidak valid" });
-
-        user.EmailVerified = true;
-        user.Status = "Active";
-        user.OtpCode = null;
-        user.OtpExpiry = null;
-        await db.SaveChangesAsync();
-
-        return Ok(new { message = "Email berhasil diverifikasi! Silakan login." });
-    }
-
-    [HttpPost("resend-otp")]
-    public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest req)
-    {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
-        if (user is null)
-            return NotFound(new { message = "Email tidak ditemukan" });
-
-        if (user.EmailVerified)
-            return BadRequest(new { message = "Email sudah terverifikasi" });
-
-        var otp = new Random().Next(100000, 999999).ToString();
-        user.OtpCode = BCrypt.Net.BCrypt.HashPassword(otp);
-        user.OtpExpiry = DateTime.UtcNow.AddMinutes(5);
-        await db.SaveChangesAsync();
-
-        await emailService.SendRegistrationOtpAsync(user.Email, otp);
-
-        return Ok(new { message = "OTP baru telah dikirim ke email kamu" });
-    }
+    // TODO akhir Sprint 2: aktifkan kembali setelah email service siap
+    // [HttpPost("verify-email")]
+    // [HttpPost("resend-otp")]
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest req)
@@ -115,8 +66,9 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         if (user is null || !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
             return Unauthorized(new { message = "Email atau password salah" });
 
-        if (!user.EmailVerified)
-            return Unauthorized(new { message = "Email belum diverifikasi. Cek inbox email kamu." });
+        // TODO akhir Sprint 2: aktifkan kembali setelah email service siap
+        // if (!user.EmailVerified)
+        //     return Unauthorized(new { message = "Email belum diverifikasi. Cek inbox email kamu." });
 
         var token = GenerateJwt(user);
         return Ok(new AuthResponse(token, user.Role, user.FullName));
