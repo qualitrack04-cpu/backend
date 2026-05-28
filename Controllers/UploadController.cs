@@ -1,3 +1,4 @@
+using System.Net.Mime;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -106,5 +107,22 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
         await db.SaveChangesAsync();
 
         return Ok(new { message = "File berhasil dihapus", fileId = fileId });
+    }
+
+    [HttpGet("file/{fileId}")]
+    [Authorize]
+    public async Task<IActionResult> GetFileById(Guid fileId)
+    {
+        var evidence = await db.EvidenceFiles.FindAsync(fileId);
+        if(evidence is null) return NotFound(new { message = "File tidak ditemukan"});
+        return Ok(new
+        {
+            fileId = evidence.Id,
+            fileName = evidence.FileName,
+            url = evidence.StoragePath,
+            ContentType = evidence.ContentType,
+            fileSizeBytes = evidence.FileSizeBytes,
+            uploadedAt = evidence.UploadedAt
+        });
     }
 }
