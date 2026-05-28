@@ -3,7 +3,7 @@ using Amazon.S3.Model;
 
 namespace QualiTrack.Services;
 
-public class S3StorageService
+public class S3StorageService : IStorageService
 {
     private readonly IAmazonS3 _s3;
     private readonly string _bucketName;
@@ -11,19 +11,35 @@ public class S3StorageService
 
     public S3StorageService(IConfiguration config)
     {
-        _bucketName = config["S3:BucketName"]!;
-        _endpoint = config["S3:Endpoint"]!;
+        // ✅ Support AWS_ variables dari Railway dan S3__ variables dari appsettings
+        _endpoint = config["AWS_ENDPOINT_URL"]
+            ?? Environment.GetEnvironmentVariable("AWS_ENDPOINT_URL")
+            ?? config["S3:Endpoint"]
+            ?? throw new InvalidOperationException("S3 endpoint tidak ditemukan");
 
-        var s3Config = new AmazonS3Config
-        {
-            ServiceURL = _endpoint,
-            ForcePathStyle = true
-        };
+        _bucketName = config["AWS_S3_BUCKET_NAME"]
+            ?? Environment.GetEnvironmentVariable("AWS_S3_BUCKET_NAME")
+            ?? config["S3:BucketName"]
+            ?? throw new InvalidOperationException("S3 bucket name tidak ditemukan");
+
+        var accessKey = config["AWS_ACCESS_KEY_ID"]
+            ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID")
+            ?? config["S3:AccessKeyId"]
+            ?? throw new InvalidOperationException("S3 access key tidak ditemukan");
+
+        var secretKey = config["AWS_SECRET_ACCESS_KEY"]
+            ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY")
+            ?? config["S3:SecretAccessKey"]
+            ?? throw new InvalidOperationException("S3 secret key tidak ditemukan");
 
         _s3 = new AmazonS3Client(
-            config["S3:AccessKeyId"] ?? Environment.GetEnvironmentVariable("RAILWAY_BUCKET_ACCESS_KEY_ID"),
-            config["S3:SecretAccessKey"] ?? Environment.GetEnvironmentVariable("RAILWAY_BUCKET_SECRET_ACCESS_KEY"),
-            s3Config
+            accessKey,
+            secretKey,
+            new AmazonS3Config
+            {
+                ServiceURL = _endpoint,
+                ForcePathStyle = true
+            }
         );
     }
 
@@ -41,7 +57,6 @@ public class S3StorageService
         };
 
         await _s3.PutObjectAsync(request);
-
         return $"{_endpoint}/{_bucketName}/uploads/{fileName}";
     }
 
