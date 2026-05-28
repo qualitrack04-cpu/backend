@@ -7,7 +7,7 @@ using QualiTrack.Services;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UploadController(AppDbContext db, S3StorageService s3Service) : ControllerBase
+public class UploadController(AppDbContext db, IStorageService storage ) : ControllerBase
 {
     private readonly string[] _allowedTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
     private const int MaxImageWidth = 1280;
@@ -19,7 +19,7 @@ public class UploadController(AppDbContext db, S3StorageService s3Service) : Con
         var finding = await db.Findings.FindAsync(findingId);
         if (finding is null) return NotFound("Finding tidak ditemukan");
 
-        var url = await s3Service.UploadFileAsync(file);
+        var url = await storage.UploadFileAsync(file);
         if (url is null) return BadRequest("Format file tidak didukung. Gunakan JPG, PNG, atau PDF");
 
         var evidence = new EvidenceFile
@@ -49,7 +49,7 @@ public class UploadController(AppDbContext db, S3StorageService s3Service) : Con
         var action = await db.CAPAActions.FindAsync(actionId);
         if (action is null) return NotFound("CAPA Action tidak ditemukan");
 
-        var url = await s3Service.UploadFileAsync(file);
+        var url = await storage.UploadFileAsync(file);
         if (url is null) return BadRequest("Format file tidak didukung. Gunakan JPG, PNG, atau PDF");
 
         var evidence = new EvidenceFile
@@ -100,7 +100,7 @@ public class UploadController(AppDbContext db, S3StorageService s3Service) : Con
         if (evidence is null) return NotFound(new { message = "File tidak ditemukan" });
 
         if (!string.IsNullOrEmpty(evidence.StoragePath))
-            await s3Service.DeleteFileAsync(evidence.StoragePath);
+            await storage.DeleteFileAsync(evidence.StoragePath);
 
         db.EvidenceFiles.Remove(evidence);
         await db.SaveChangesAsync();
