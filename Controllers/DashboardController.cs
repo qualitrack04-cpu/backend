@@ -99,10 +99,7 @@ public class DashboardController(AppDbContext db) : ControllerBase
         });
     }
 
-    // ============================================================
-    // GET /api/Dashboard/audit-schedule?month=5&year=2026
-    // Audit Schedule bulanan
-    // ============================================================
+    // GET /api/Dashboard/audit-schedule?month=10&year=2023
     [HttpGet("audit-schedule")]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> GetAuditSchedule(
@@ -114,41 +111,32 @@ public class DashboardController(AppDbContext db) : ControllerBase
 
         var schedules = await db.AuditSchedules
             .Include(s => s.AuditPlan)
-            .Include(s => s.Auditor)
             .Where(s => s.ScheduledDate.Month == targetMonth
-                     && s.ScheduledDate.Year == targetYear)
+                    && s.ScheduledDate.Year == targetYear)
             .OrderBy(s => s.ScheduledDate)
             .ToListAsync();
 
-        // Cek status session untuk setiap schedule
-        var scheduleIds = schedules.Select(s => s.Id).ToList();
-        var sessions = await db.AuditSessions
-            .Where(s => scheduleIds.Contains(s.ScheduleId))
-            .ToListAsync();
-
-        var result = schedules.Select(s =>
-        {
-            var session = sessions.FirstOrDefault(ses => ses.ScheduleId == s.Id);
-            return new
+        // Group by tanggal, tiap tanggal berisi list department
+        var result = schedules
+            .GroupBy(s => s.ScheduledDate.Day)
+            .Select(g => new
             {
-                scheduleId = s.Id,
-                planTitle = s.AuditPlan?.Title,
-                standard = s.AuditPlan?.Standard,
-                clauseRef = s.ClauseRef,
-                department = s.Department,
-                auditorName = s.Auditor?.FullName ?? s.AuditorName,
-                scheduledDate = s.ScheduledDate,
-                status = session == null ? "NotStarted"
-                    : session.Status.ToString(),
-                sessionId = session?.Id
-            };
-        });
+                day = g.Key,
+                departments = g.Select(s => new
+                {
+                    department = s.Department,
+                    scheduleId = s.Id,
+                    planTitle = s.AuditPlan?.Title,
+                    standard = s.AuditPlan?.Standard
+                }).ToList()
+            })
+            .OrderBy(x => x.day)
+            .ToList();
 
         return Ok(new
         {
             month = targetMonth,
             year = targetYear,
-            total = schedules.Count,
             data = result
         });
     }
