@@ -1,0 +1,187 @@
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using QualiTrack.Models;
+
+namespace QualiTrack.Services;
+
+public class PdfReportService
+{
+    public byte[] GenerateAuditReport(AuditSession session)
+    {
+        QuestPDF.Settings.License = LicenseType.Community;
+
+        var schedule = session.Schedule;
+        var plan = schedule.AuditPlan;
+        var responses = session.Responses?.ToList() ?? [];
+        var findings = session.Findings?.ToList() ?? [];
+
+        return Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(2, Unit.Centimetre);
+                page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                page.Content().Element(content => ComposeAll(content, session, schedule, plan, responses, findings));
+                page.Footer().AlignCenter().Text(x =>
+                {
+                    x.Span("QualiTrack — Halaman ");
+                    x.CurrentPageNumber();
+                    x.Span(" / ");
+                    x.TotalPages();
+                });
+            });
+        }).GeneratePdf();
+    }
+
+    private void ComposeAll(IContainer container, AuditSession session, AuditSchedule schedule, AuditPlan plan, List<AuditResponse> responses, List<Finding> findings)
+    {
+        container.Column(col =>
+        {
+            // ===== HEADER =====
+            col.Item().Background("#1a3a5c").Padding(16).Column(h =>
+            {
+                h.Item().Text("QUALITRACK - AUDIT REPORT")
+                    .FontSize(18).Bold().FontColor("#ffffff").AlignCenter();
+                h.Item().PaddingTop(4).Text($"Internal Audit Report - {plan.Standard}")
+                    .FontSize(11).FontColor("#adc8e6").AlignCenter();
+            });
+
+            col.Item().PaddingTop(12).Table(table =>
+            {
+                table.ColumnsDefinition(c => { c.RelativeColumn(); c.RelativeColumn(); });
+
+                void InfoRow(string label, string value)
+                {
+                    table.Cell().Padding(4).Text(label).SemiBold();
+                    table.Cell().Padding(4).Text(value);
+                }
+
+                InfoRow("Audit ID", $"A-{plan.Year}-{plan.Id.ToString()[..3].ToUpper()}");
+                InfoRow("Department", schedule.Department);
+                InfoRow("Auditor", schedule.AuditorName);
+                InfoRow("Audit Date", schedule.ScheduledDate.ToString("dd MMM yyyy"));
+                InfoRow("Standard", plan.Standard);
+                InfoRow("Audit Status", session.Status.ToString());
+            });
+
+            // ===== AUDIT SUMMARY =====
+            col.Item().PaddingTop(16).Column(s =>
+            {
+                s.Item().Background("#f0f4f8").Padding(8).Text("Audit Summary")
+                    .FontSize(12).Bold();
+                s.Item().Padding(8).Text(
+                    string.IsNullOrEmpty(plan.Description)
+                        ? $"Audit dilakukan pada departemen {schedule.Department} berdasarkan standar {plan.Standard} untuk mengevaluasi kepatuhan proses operasional, dokumentasi, dan implementasi prosedur kualitas."
+                        : plan.Description
+                );
+            });
+
+            // ===== CHECKLIST RESULT =====
+            col.Item().PaddingTop(16).Column(s =>
+            {
+                s.Item().Background("#f0f4f8").Padding(8).Text("Checklist Result")
+                    .FontSize(12).Bold();
+
+                if (!responses.Any())
+                {
+                    s.Item().Padding(8).Text("Belum ada jawaban checklist.").Italic();
+                }
+                else
+                {
+                    s.Item().PaddingTop(8).Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.RelativeColumn(1);  // Clause
+                            c.RelativeColumn(3);  // Checklist
+                            c.RelativeColumn(1);  // Result
+                            c.RelativeColumn(2);  // Note
+                        });
+
+                        // Header
+                        table.Header(h =>
+                        {
+                            static IContainer HCell(IContainer c) =>
+                                c.Background("#1a3a5c").Padding(6);
+                            static TextStyle HText() =>
+                                TextStyle.Default.FontColor("#ffffff").FontSize(9).Bold();
+
+                            h.Cell().Element(HCell).Text("Clause").Style(HText());
+                            h.Cell().Element(HCell).Text("Checklist").Style(HText());
+                            h.Cell().Element(HCell).Text("Result").Style(HText());
+                            h.Cell().Element(HCell).Text("Note").Style(HText());
+                        });
+
+                        for (int i = 0; i < responses.Count; i++)
+                        {
+                            var r = responses[i];
+                            var bg = i % 2 == 0 ? "#f9f9f9" : "#ffffff";
+                            var resultColor = r.Answer == ResponseAnswer.Conform ? "#2e7d32"
+                                : r.Answer == ResponseAnswer.NotConform ? "#c62828" : "#757575";
+                            var resultText = r.Answer == ResponseAnswer.Conform ? "PASS"
+                                : r.Answer == ResponseAnswer.NotConform ? "FAIL" : "N/A";
+
+                            IContainer DCell(IContainer c) => c.Background(bg).Padding(5);
+
+                            table.Cell().Element(DCell).Text(r.ChecklistItem?.ClauseRef ?? "-");
+                            table.Cell().Element(DCell).Text(r.ChecklistItem?.Question ?? "-");
+                            table.Cell().Element(DCell).Text(resultText).FontColor(resultColor).Bold();
+                            table.Cell().Element(DCell).Text(r.Notes ?? "-");
+                        }
+                    });
+                }
+            });
+
+            // ===== EVIDENCE DOCUMENTATION =====
+            var failResponses = responses.Where(r => r.Answer == ResponseAnswer.NotConform && r.Evidences.Any()).ToList();
+            var failFindings = findings.Where(f => f.Category == FindingCategory.MajorNC || f.Category == FindingCategory.MinorNC).ToList();
+
+            if (failFindings.Any())
+            {
+                col.Item().PaddingTop(16).Column(s =>
+                {
+                    s.Item().Background("#f0f4f8").Padding(8).Text("Evidence Documentation")
+                        .FontSize(12).Bold();
+
+                    foreach (var f in failFindings)
+                    {
+                        s.Item().PaddingTop(12).Column(fc =>
+                        {
+                            fc.Item().Text($"FAIL — {f.Title}")
+                                .FontSize(11).Bold().Italic().FontColor("#c62828");
+                            fc.Item().Text($"Category: {f.Category}")
+                                .FontSize(9).FontColor("#555555");
+                            fc.Item().PaddingTop(4).Text("Auditor Note:").SemiBold();
+                            fc.Item().Text(f.Description);
+                        });
+                    }
+                });
+            }
+
+            // ===== RECOMMENDATION =====
+            col.Item().PaddingTop(16).Column(s =>
+            {
+                s.Item().Text("Recommendation").FontSize(14).Bold();
+                s.Item().LineHorizontal(1).LineColor("#1a3a5c");
+                s.Item().PaddingTop(8).Column(rc =>
+                {
+                    if (!failFindings.Any())
+                    {
+                        rc.Item().Text("Tidak ada temuan signifikan. Pertahankan standar yang ada.").Italic();
+                    }
+                    else
+                    {
+                        for (int i = 0; i < failFindings.Count; i++)
+                        {
+                            var f = failFindings[i];
+                            rc.Item().Text($"{i + 1}. {f.Description}");
+                        }
+                    }
+                });
+            });
+        });
+    }
+}

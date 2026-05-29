@@ -60,6 +60,7 @@ else
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
 
 builder.Services.AddScoped<ValidateUserFilter>();
+builder.Services.AddScoped<PdfReportService>();
 
 builder.Services.AddControllers(options =>
 {
