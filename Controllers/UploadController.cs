@@ -125,4 +125,60 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
             uploadedAt = evidence.UploadedAt
         });
     }
+
+    // POST /api/Upload/audit-response/{responseId}
+    [HttpPost("audit-response/{responseId}")]
+    [Authorize]
+    public async Task<IActionResult> UploadForAuditResponse(Guid responseId, IFormFile file)
+    {
+        var response = await db.AuditResponses.FindAsync(responseId);
+        if (response is null) return NotFound(new { message = "Response tidak ditemukan" });
+
+        if (response.Answer != ResponseAnswer.Conform)
+            return BadRequest(new { message = "Upload evidence hanya untuk jawaban PASS" });
+
+        if (!_allowedTypes.Contains(file.ContentType))
+            return BadRequest(new { message = "Format file tidak didukung. Gunakan JPG, PNG, atau PDF" });
+
+        var url = await storage.UploadFileAsync(file);
+
+        var evidence = new EvidenceFile
+        {
+            Id = Guid.NewGuid(),
+            FileName = file.FileName,
+            StoragePath = url,
+            ContentType = file.ContentType,
+            FileSizeBytes = file.Length,
+            UploadedAt = DateTime.UtcNow,
+            AuditResponseId = responseId
+        };
+
+        db.EvidenceFiles.Add(evidence);
+        await db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            fileId = evidence.Id,
+            fileName = evidence.FileName,
+            url = url
+        });
+    }
+
+    // GET /api/Upload/audit-response/{responseId}
+    [HttpGet("audit-response/{responseId}")]
+    [Authorize]
+    public async Task<IActionResult> GetAuditResponseFiles(Guid responseId)
+    {
+        var files = await db.EvidenceFiles
+            .Where(e => e.AuditResponseId == responseId)
+            .Select(e => new
+            {
+                id = e.Id,
+                fileName = e.FileName,
+                url = e.StoragePath
+            })
+            .ToListAsync();
+
+        return Ok(files);
+    }
 }
