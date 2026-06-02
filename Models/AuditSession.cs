@@ -11,6 +11,7 @@ public class AuditSession
     public Checklist Checklist { get; set; } = null!;
     public AuditSessionStatus Status { get; set; } = AuditSessionStatus.InProgress;
     public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set;} = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
     public string? Notes { get; set; }
     public ICollection<AuditResponse> Responses { get; set; } = [];
