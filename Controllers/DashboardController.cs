@@ -17,14 +17,16 @@ public class DashboardController(AppDbContext db) : ControllerBase
     // ============================================================
     [HttpGet("summary")]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
-    public async Task<IActionResult> GetSummary()
+    public async Task<IActionResult> GetSummary([FromQuery] int? year)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
+        // Filter audit session berdasarkan tahun (misal dari createdAt / schedule)
         var activeAudit = await db.AuditSessions
             .CountAsync(s => s.Status == AuditSessionStatus.InProgress);
 
-        var totalCapa = await db.CAPAs.CountAsync();
+        var totalCapa = await db.CAPAs
+            .CountAsync();
 
         var capaOpen = await db.CAPAs
             .CountAsync(c => c.Status == CAPAStatus.Open || c.Status == CAPAStatus.InProgress);
@@ -47,11 +49,15 @@ public class DashboardController(AppDbContext db) : ControllerBase
     // ============================================================
     [HttpGet("compliance-score")]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
-    public async Task<IActionResult> GetComplianceScore()
+    public async Task<IActionResult> GetComplianceScore([FromQuery] int? year)
     {
+        var targetYear = year ?? DateTime.UtcNow.Year;
+
         // Ambil semua session yang completed beserta responses
         var sessions = await db.AuditSessions
-            .Where(s => s.Status == AuditSessionStatus.Completed)
+            .Where(s => s.Status == AuditSessionStatus.Completed
+                     && s.Schedule != null
+                     && s.Schedule.ScheduledDate.Year == targetYear)
             .Include(s => s.Schedule)
             .Include(s => s.Responses)
             .ToListAsync();
@@ -73,6 +79,25 @@ public class DashboardController(AppDbContext db) : ControllerBase
                     ? Math.Round((double)conformResponses / totalResponses * 100, 1)
                     : 0;
 
+                var monthlyBreakdown = g
+                    .GroupBy(s => s.Schedule.ScheduledDate.Month)
+                    .Select(mg =>
+                    {
+                        var mTotal = mg.Sum(s => s.Responses.Count);
+                        var mConform = mg.Sum(s => s.Responses
+                            .Count(r => r.Answer == ResponseAnswer.Conform));
+                        return new
+                        {
+                            month = mg.Key,
+                            score = mTotal > 0
+                                ? Math.Round((double)mConform / mTotal * 100, 1)
+                                : 0,
+                            totalResponses = mTotal,
+                            conformResponses = mConform
+                        };
+                    })
+                    .OrderBy(x => x.month)
+                    .ToList();
                 return new
                 {
                     department = g.Key,
