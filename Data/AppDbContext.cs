@@ -22,6 +22,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CloseOutVerification> CloseOutVerifications => Set<CloseOutVerification>();
     public DbSet<EvidenceFile> EvidenceFiles => Set<EvidenceFile>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<AuditSummary> AuditSummaries => Set<AuditSummary>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {

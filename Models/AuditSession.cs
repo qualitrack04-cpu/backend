@@ -16,6 +16,7 @@ public class AuditSession
     public string? Notes { get; set; }
     public ICollection<AuditResponse> Responses { get; set; } = [];
     public ICollection<Finding> Findings { get; set; } = [];
+    public AuditSummary? Summary { get; set; }
 }
 
 public enum AuditSessionStatus { InProgress, Completed, Cancelled }

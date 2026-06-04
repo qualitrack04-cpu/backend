@@ -126,6 +126,65 @@ public class AuditSessionController : ControllerBase
         return Ok(new { message = "Audit session dibatalkan", data = ToDto(session) });
     }
 
+    // POST /api/AuditSession/{sessionId}/summary
+    [HttpPost("{sessionId}/summary")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor")]
+    public async Task<IActionResult> CreateSummary(Guid sessionId, [FromBody] CreateAuditSummaryDto dto)
+    {
+        var session = await _db.AuditSessions
+            .Include(s => s.Summary)
+            .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+        if (session is null)
+            return NotFound(new { message = $"Session {sessionId} not found" });
+
+        if (session.Status == AuditSessionStatus.Cancelled)
+            return BadRequest(new { message = "Cancelled session cannot be summarized" });
+
+        if (session.Summary is not null)
+            return BadRequest(new { message = "Summary already exists for this session" });
+
+        var summary = new AuditSummary
+        {
+            Id = Guid.NewGuid(),
+            AuditSessionId = sessionId,
+            Content = dto.Content,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Sekalian complete session
+        session.Status = AuditSessionStatus.Completed;
+        session.CompletedAt = DateTime.UtcNow;
+
+        _db.AuditSummaries.Add(summary);
+        await _db.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetSummary), new { sessionId },
+            new { message = "Summary saved and audit session completed", data = ToSummaryDto(summary) });
+    }
+
+    // GET /api/AuditSession/{sessionId}/summary
+    [HttpGet("{sessionId}/summary")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor")]
+    public async Task<IActionResult> GetSummary(Guid sessionId)
+    {
+        var summary = await _db.AuditSummaries
+            .FirstOrDefaultAsync(s => s.AuditSessionId == sessionId);
+
+        if (summary is null)
+            return NotFound(new { message = "Summary not found for this session" });
+
+        return Ok(new { data = ToSummaryDto(summary) });
+    }
+
+    private static AuditSummaryResponseDto ToSummaryDto(AuditSummary s) => new()
+    {
+        Id = s.Id,
+        AuditSessionId = s.AuditSessionId,
+        Content = s.Content,
+        CreatedAt = s.CreatedAt
+    };
+
     private static AuditSessionResponseDto ToDto(AuditSession s) => new()
     {
         Id = s.Id,
