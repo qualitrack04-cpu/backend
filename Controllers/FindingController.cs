@@ -97,7 +97,7 @@ public class FindingController(AppDbContext db) : ControllerBase
             SessionId = req.SessionId,
             ChecklistItemId = req.ChecklistItemId,
             ReporterName = req.ReporterName,
-            Category = req.Category!.Value,
+            Category = req.Category ?? FindingCategory.MinorNC,
             Description = req.Description,
             ClauseRef = req.ClauseRef,
             FoundAt = DateTime.UtcNow,
@@ -118,7 +118,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         finding.Title = req.Title;
         finding.Department = req.Department;
         finding.ReporterName = req.ReporterName;
-        if (req.Category.HasValue) finding.Category = req.Category.Value;
+        finding.Category = req.Category ?? finding.Category;
         finding.Description = req.Description;
         finding.ClauseRef = req.ClauseRef;
         await db.SaveChangesAsync();
