@@ -47,7 +47,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<QualiTrack.Services.IEmailService, QualiTrack.Services.EmailService>();
 
-var useS3 = builder.Configuration["Storage:UseS3"] == "true";
+var isRailway = Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT") != null;
+var useS3 = isRailway || builder.Configuration["Storage:UseS3"] == "true";
 if (useS3)
 {
     builder.Services.AddScoped<IStorageService, S3StorageService>();
