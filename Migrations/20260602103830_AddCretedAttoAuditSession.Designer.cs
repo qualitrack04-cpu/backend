@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QualiTrack.Data;
@@ -11,9 +12,11 @@ using QualiTrack.Data;
 namespace QualiTrack.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260602103830_AddCretedAttoAuditSession")]
+    partial class AddCretedAttoAuditSession
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -152,30 +155,6 @@ namespace QualiTrack.Migrations
                     b.HasIndex("ScheduleId");
 
                     b.ToTable("AuditSessions");
-                });
-
-            modelBuilder.Entity("QualiTrack.Models.AuditSummary", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AuditSessionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AuditSessionId")
-                        .IsUnique();
-
-                    b.ToTable("AuditSummaries");
                 });
 
             modelBuilder.Entity("QualiTrack.Models.CAPA", b =>
@@ -526,17 +505,6 @@ namespace QualiTrack.Migrations
                     b.Navigation("Schedule");
                 });
 
-            modelBuilder.Entity("QualiTrack.Models.AuditSummary", b =>
-                {
-                    b.HasOne("QualiTrack.Models.AuditSession", "AuditSession")
-                        .WithOne("Summary")
-                        .HasForeignKey("QualiTrack.Models.AuditSummary", "AuditSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AuditSession");
-                });
-
             modelBuilder.Entity("QualiTrack.Models.CAPA", b =>
                 {
                     b.HasOne("QualiTrack.Models.Finding", "Finding")
@@ -624,8 +592,6 @@ namespace QualiTrack.Migrations
                     b.Navigation("Findings");
 
                     b.Navigation("Responses");
-
-                    b.Navigation("Summary");
                 });
 
             modelBuilder.Entity("QualiTrack.Models.CAPA", b =>

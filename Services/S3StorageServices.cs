@@ -46,18 +46,20 @@ public class S3StorageService : IStorageService
     public async Task<string> UploadFileAsync(IFormFile file)
     {
         var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+        var key = $"uploads/{fileName}";
 
         using var stream = file.OpenReadStream();
         var request = new PutObjectRequest
         {
             BucketName = _bucketName,
-            Key = $"uploads/{fileName}",
+            Key = key,
             InputStream = stream,
-            ContentType = file.ContentType
+            ContentType = file.ContentType,
+            CannedACL = S3CannedACL.PublicRead
         };
 
         await _s3.PutObjectAsync(request);
-        return $"{_endpoint}/{_bucketName}/uploads/{fileName}";
+        return $"https://{_bucketName}.t3.tigrisfiles.io/{key}";
     }
 
     public async Task DeleteFileAsync(string fileUrl)
