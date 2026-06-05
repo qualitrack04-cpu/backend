@@ -94,10 +94,8 @@ public class PdfReportService
                     {
                         table.ColumnsDefinition(c =>
                         {
-                            c.RelativeColumn(1);  // Clause
                             c.RelativeColumn(3);  // Checklist
                             c.RelativeColumn(1);  // Result
-                            c.RelativeColumn(2);  // Note
                         });
 
                         // Header
@@ -125,37 +123,64 @@ public class PdfReportService
 
                             IContainer DCell(IContainer c) => c.Background(bg).Padding(5);
 
-                            table.Cell().Element(DCell).Text(r.ChecklistItem?.ClauseRef ?? "-");
                             table.Cell().Element(DCell).Text(r.ChecklistItem?.Question ?? "-");
                             table.Cell().Element(DCell).Text(resultText).FontColor(resultColor).Bold();
-                            table.Cell().Element(DCell).Text(r.Notes ?? "-");
                         }
                     });
                 }
             });
 
             // ===== EVIDENCE DOCUMENTATION =====
-            var failResponses = responses.Where(r => r.Answer == ResponseAnswer.NotConform && r.Evidences.Any()).ToList();
+            var passResponses = responses.Where(r => r.Answer == ResponseAnswer.Conform && r.Evidences != null && r.Evidences.Any()).ToList();
             var failFindings = findings.Where(f => f.Category == FindingCategory.MajorNC || f.Category == FindingCategory.MinorNC).ToList();
 
-            if (failFindings.Any())
+            if (passResponses.Any() || failFindings.Any())
             {
                 col.Item().PaddingTop(16).Column(s =>
                 {
                     s.Item().Background("#f0f4f8").Padding(8).Text("Evidence Documentation")
                         .FontSize(12).Bold();
 
-                    foreach (var f in failFindings)
+                    // PASS — foto saja
+                    if (passResponses.Any())
                     {
-                        s.Item().PaddingTop(12).Column(fc =>
+                        s.Item().PaddingTop(8).Text("✓ Conforming Evidence").FontSize(10).Bold().FontColor("#2e7d32");
+                        foreach (var r in passResponses)
                         {
-                            fc.Item().Text($"FAIL — {f.Title}")
-                                .FontSize(11).Bold().Italic().FontColor("#c62828");
-                            fc.Item().Text($"Category: {f.Category}")
-                                .FontSize(9).FontColor("#555555");
-                            fc.Item().PaddingTop(4).Text("Auditor Note:").SemiBold();
-                            fc.Item().Text(f.Description);
-                        });
+                            s.Item().PaddingTop(6).Column(rc =>
+                            {
+                                rc.Item().Text(r.ChecklistItem?.Question ?? "-").FontSize(9).FontColor("#555555");
+                                foreach (var ev in r.Evidences!)
+                                {
+                                    rc.Item().Text($"📎 {ev.FileName}").FontSize(9).FontColor("#1565c0");
+                                }
+                            });
+                        }
+                    }
+
+                    // FAIL — foto + category + note (dari finding description)
+                    if (failFindings.Any())
+                    {
+                        s.Item().PaddingTop(12).Text("✗ Non-Conforming Findings").FontSize(10).Bold().FontColor("#c62828");
+                        foreach (var f in failFindings)
+                        {
+                            s.Item().PaddingTop(8).Column(fc =>
+                            {
+                                fc.Item().Text(f.Title).FontSize(11).Bold().FontColor("#c62828");
+                                fc.Item().Text($"Category: {f.Category}").FontSize(9).FontColor("#555555");
+                                fc.Item().PaddingTop(2).Text($"Note: {f.Description}").FontSize(9);
+
+                                var findingEvidences = f.Evidences?.ToList() ?? [];
+                                if (findingEvidences.Any())
+                                {
+                                    fc.Item().PaddingTop(4).Text("Evidence:").FontSize(9).SemiBold();
+                                    foreach (var ev in findingEvidences)
+                                    {
+                                        fc.Item().Text($"📎 {ev.FileName}").FontSize(9).FontColor("#1565c0");
+                                    }
+                                }
+                            });
+                        }
                     }
                 });
             }

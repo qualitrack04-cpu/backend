@@ -22,6 +22,8 @@ public class PdfController(AppDbContext db, PdfReportService pdfService) : Contr
             .Include(s => s.Findings)
                 .ThenInclude(f => f.Capa)
                     .ThenInclude(c => c!.Pic)
+            .Include(s => s.Findings)
+                .ThenInclude(f => f.Evidences)
             .Include(s => s.Responses)
                 .ThenInclude(r => r.ChecklistItem)
             .Include(s => s.Summary)

@@ -17,6 +17,7 @@ public class Finding
     public DateTime FoundAt { get; set; } = DateTime.UtcNow;
     public FindingStatus Status { get; set; } = FindingStatus.Open;
     public CAPA? Capa { get; set; }
+    public ICollection<EvidenceFile>? Evidences { get; set; }
 }
 
 public enum FindingCategory { MajorNC, MinorNC, Observation, OFI }
