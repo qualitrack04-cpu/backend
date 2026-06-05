@@ -14,6 +14,7 @@ namespace QualiTrack.Controllers;
 [ValidateModelAttribute]
 public class FindingController(AppDbContext db) : ControllerBase
 {
+    // API: GET /api/Finding
     [HttpGet]
     [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> GetAll(
@@ -30,6 +31,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         return Ok(await query.ToListAsync());
     }
 
+    // API: GET /api/Finding/{id}
     [HttpGet("{id}")]
     [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> GetById(Guid id)
@@ -38,6 +40,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         return finding is null ? NotFound() : Ok(finding);
     }
 
+    // API: GET /api/Finding/without-capa
     [HttpGet("without-capa")]
     [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> GetWithoutCapa()
@@ -53,7 +56,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         return Ok(new { total = findings.Count, data = findings });
     }
 
-    // GET /api/Finding/by-session/{sessionId}
+    // API: GET /api/Finding/by-session/{sessionId}
     [HttpGet("by-session/{sessionId:guid}")]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> GetBySession(Guid sessionId)
@@ -81,6 +84,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         });
     }
 
+    // API: POST /api/Finding
     [HttpPost]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> Create([FromBody] CreateFindingRequest req)
@@ -92,6 +96,7 @@ public class FindingController(AppDbContext db) : ControllerBase
             Department = req.Department,
             SessionId = req.SessionId,
             ChecklistItemId = req.ChecklistItemId,
+            ReporterName = req.ReporterName,
             Category = req.Category!.Value,
             Description = req.Description,
             ClauseRef = req.ClauseRef,
@@ -103,6 +108,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = finding.Id }, finding);
     }
 
+    // API: PUT /api/Finding/{id}
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateFindingRequest req)
@@ -111,6 +117,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         if (finding is null) return NotFound();
         finding.Title = req.Title;
         finding.Department = req.Department;
+        finding.ReporterName = req.ReporterName;
         if (req.Category.HasValue) finding.Category = req.Category.Value;
         finding.Description = req.Description;
         finding.ClauseRef = req.ClauseRef;
@@ -118,6 +125,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         return Ok(finding);
     }
 
+    // API: PATCH /api/Finding/{id}/status
     [HttpPatch("{id}/status")]
     [Authorize(Roles = "Admin,QualityManager")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] FindingStatus status)
@@ -129,6 +137,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         return NoContent();
     }
 
+    // API: DELETE /api/Finding/{id}
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
