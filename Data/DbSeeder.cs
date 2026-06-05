@@ -6,8 +6,6 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(AppDbContext db)
     {
-        if (await db.Checklists.AnyAsync()) return;
-
         var checklists = new List<Checklist>
         {
             // ── ISO 9001 - Warehouse ──────────────────────────────────────────
@@ -227,7 +225,19 @@ public static class DbSeeder
             },
         };
 
-        db.Checklists.AddRange(checklists);
+
+
+        foreach (var checklist in checklists)
+        {
+            var exists = await db.Checklists
+                .AnyAsync(c => c.Title == checklist.Title && c.Department == checklist.Department);
+
+            if (!exists)
+            {
+                db.Checklists.Add(checklist);
+            }
+        }
+
         await db.SaveChangesAsync();
     }
 }
