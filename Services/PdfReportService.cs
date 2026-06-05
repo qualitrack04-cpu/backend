@@ -162,26 +162,26 @@ public class PdfReportService
             }
 
             // ===== RECOMMENDATION =====
-            col.Item().PaddingTop(16).Column(s =>
-            {
-                s.Item().Text("Recommendation").FontSize(14).Bold();
-                s.Item().LineHorizontal(1).LineColor("#1a3a5c");
-                s.Item().PaddingTop(8).Column(rc =>
-                {
-                    if (!failFindings.Any())
-                    {
-                        rc.Item().Text("Tidak ada temuan signifikan. Pertahankan standar yang ada.").Italic();
-                    }
-                    else
-                    {
-                        for (int i = 0; i < failFindings.Count; i++)
-                        {
-                            var f = failFindings[i];
-                            rc.Item().Text($"{i + 1}. {f.Description}");
-                        }
-                    }
-                });
-            });
+            // col.Item().PaddingTop(16).Column(s =>
+            // {
+            //     s.Item().Text("Recommendation").FontSize(14).Bold();
+            //     s.Item().LineHorizontal(1).LineColor("#1a3a5c");
+            //     s.Item().PaddingTop(8).Column(rc =>
+            //     {
+            //         if (!failFindings.Any())
+            //         {
+            //             rc.Item().Text("Tidak ada temuan signifikan. Pertahankan standar yang ada.").Italic();
+            //         }
+            //         else
+            //         {
+            //             for (int i = 0; i < failFindings.Count; i++)
+            //             {
+            //                 var f = failFindings[i];
+            //                 rc.Item().Text($"{i + 1}. {f.Description}");
+            //             }
+            //         }
+            //     });
+            // });
         });
     }
 }

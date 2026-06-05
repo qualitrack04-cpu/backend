@@ -12,10 +12,7 @@ namespace QualiTrack.Controllers;
 [Authorize]
 public class AuditReportController(AppDbContext db) : ControllerBase
 {
-    // GET /api/AuditReport
-    // List semua audit yang sudah completed untuk preview di dashboard
     [HttpGet]
-    [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? standard,
         [FromQuery] string? department,
@@ -23,17 +20,12 @@ public class AuditReportController(AppDbContext db) : ControllerBase
     {
         var sessions = await db.AuditSessions
             .Where(s => s.Status == AuditSessionStatus.Completed)
-            .Include(s => s.Schedule)
-                .ThenInclude(sch => sch.AuditPlan)
-            .Include(s => s.Schedule)
-                .ThenInclude(sch => sch.Auditor)
+            .Include(s => s.Schedule).ThenInclude(sch => sch.AuditPlan)
+            .Include(s => s.Schedule).ThenInclude(sch => sch.Auditor)
             .Include(s => s.Summary)
-            .Include(s => s.Findings)
-                .ThenInclude(f => f.Capa)
-            .AsQueryable()
+            .Include(s => s.Findings).ThenInclude(f => f.Capa)
             .ToListAsync();
 
-        // Filter
         if (!string.IsNullOrEmpty(standard))
             sessions = sessions.Where(s => s.Schedule.AuditPlan.Standard == standard).ToList();
         if (!string.IsNullOrEmpty(department))
@@ -61,29 +53,18 @@ public class AuditReportController(AppDbContext db) : ControllerBase
             ClosedCAPAs = s.Findings.Count(f => f.Capa != null && f.Capa.Status == CAPAStatus.Closed)
         }).OrderByDescending(r => r.CompletedAt).ToList();
 
-        return Ok(new { 
-            message = "Data laporan audit berhasil diambil",
-            total = result.Count,
-            data = result 
-        });
+        return Ok(new { message = "Data laporan audit berhasil diambil", total = result.Count, data = result });
     }
 
-    // GET /api/AuditReport/{sessionId}
-    // Detail lengkap satu audit untuk preview PDF
     [HttpGet("{sessionId}")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> GetDetail(Guid sessionId)
     {
         var session = await db.AuditSessions
             .Where(s => s.Id == sessionId)
-            .Include(s => s.Schedule)
-                .ThenInclude(sch => sch.AuditPlan)
-            .Include(s => s.Schedule)
-                .ThenInclude(sch => sch.Auditor)
+            .Include(s => s.Schedule).ThenInclude(sch => sch.AuditPlan)
+            .Include(s => s.Schedule).ThenInclude(sch => sch.Auditor)
             .Include(s => s.Summary)
-            .Include(s => s.Findings)
-                .ThenInclude(f => f.Capa)
-                    .ThenInclude(c => c!.Pic)
+            .Include(s => s.Findings).ThenInclude(f => f.Capa).ThenInclude(c => c!.Pic)
             .FirstOrDefaultAsync();
 
         if (session is null)
