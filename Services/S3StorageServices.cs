@@ -11,7 +11,6 @@ public class S3StorageService : IStorageService
 
     public S3StorageService(IConfiguration config)
     {
-        // ✅ Support AWS_ variables dari Railway dan S3__ variables dari appsettings
         _endpoint = config["AWS_ENDPOINT_URL"]
             ?? Environment.GetEnvironmentVariable("AWS_ENDPOINT_URL")
             ?? config["S3:Endpoint"]
@@ -49,23 +48,30 @@ public class S3StorageService : IStorageService
         var key = $"uploads/{fileName}";
 
         using var stream = file.OpenReadStream();
-        var request = new PutObjectRequest
+        await _s3.PutObjectAsync(new PutObjectRequest
         {
             BucketName = _bucketName,
             Key = key,
             InputStream = stream,
-            ContentType = file.ContentType,
-            CannedACL = S3CannedACL.PublicRead
-        };
+            ContentType = file.ContentType
+        });
 
-        await _s3.PutObjectAsync(request);
-        return $"https://{_bucketName}.t3.tigrisfiles.io/{key}";
+        return key;
     }
 
-    public async Task DeleteFileAsync(string fileUrl)
+    public string GetPresignedUrl(string key, int expiryHours = 24)
     {
-        var key = fileUrl.Replace($"{_endpoint}/{_bucketName}/", "");
+        return _s3.GetPreSignedURL(new GetPreSignedUrlRequest 
+        {
+            BucketName = _bucketName,
+            Key = key,
+            Expires = DateTime.UtcNow.AddHours(expiryHours),
+            Protocol = Protocol.HTTPS
+        });
+    }
 
+    public async Task DeleteFileAsync(string key)
+    {
         await _s3.DeleteObjectAsync(new DeleteObjectRequest
         {
             BucketName = _bucketName,

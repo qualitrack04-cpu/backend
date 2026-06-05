@@ -20,14 +20,14 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
         var finding = await db.Findings.FindAsync(findingId);
         if (finding is null) return NotFound("Finding tidak ditemukan");
 
-        var url = await storage.UploadFileAsync(file);
-        if (url is null) return BadRequest("Format file tidak didukung. Gunakan JPG, PNG, atau PDF");
+        var key = await storage.UploadFileAsync(file);
+        if (key is null) return BadRequest("Format file tidak didukung. Gunakan JPG, PNG, atau PDF");
 
         var evidence = new EvidenceFile
         {
             Id = Guid.NewGuid(),
             FileName = file.FileName,
-            StoragePath = url,
+            StoragePath = key,
             ContentType = file.ContentType,
             FileSizeBytes = file.Length,
             UploadedAt = DateTime.UtcNow,
@@ -40,7 +40,7 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
         return Ok(new {
             fileId = evidence.Id,
             fileName = evidence.FileName,
-            url = url
+            url = storage.GetPresignedUrl(key),
         });
     }
 
@@ -50,14 +50,14 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
         var action = await db.CAPAActions.FindAsync(actionId);
         if (action is null) return NotFound("CAPA Action tidak ditemukan");
 
-        var url = await storage.UploadFileAsync(file);
-        if (url is null) return BadRequest("Format file tidak didukung. Gunakan JPG, PNG, atau PDF");
+        var key = await storage.UploadFileAsync(file);
+        if (key is null) return BadRequest("Format file tidak didukung. Gunakan JPG, PNG, atau PDF");
 
         var evidence = new EvidenceFile
         {
             Id = Guid.NewGuid(),
             FileName = file.FileName,
-            StoragePath = url,
+            StoragePath = key,
             ContentType = file.ContentType,
             FileSizeBytes = file.Length,
             UploadedAt = DateTime.UtcNow,
@@ -70,7 +70,7 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
         return Ok(new {
             fileId = evidence.Id,
             fileName = evidence.FileName,
-            url = url,
+            url = storage.GetPresignedUrl(key),
             originalSize = file.Length,
             compressedSize = file.Length,
             savedPercent = 0
@@ -86,7 +86,7 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
             {
                 id = e.Id,
                 fileName = e.FileName,
-                url = e.StoragePath,
+                url = storage.GetPresignedUrl(e.StoragePath),
             })
             .ToListAsync();
 
@@ -119,7 +119,7 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
         {
             fileId = evidence.Id,
             fileName = evidence.FileName,
-            url = evidence.StoragePath,
+            url = storage.GetPresignedUrl(evidence.StoragePath),
             ContentType = evidence.ContentType,
             fileSizeBytes = evidence.FileSizeBytes,
             uploadedAt = evidence.UploadedAt
@@ -140,13 +140,13 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
         if (!_allowedTypes.Contains(file.ContentType))
             return BadRequest(new { message = "Format file tidak didukung. Gunakan JPG, PNG, atau PDF" });
 
-        var url = await storage.UploadFileAsync(file);
+        var key = await storage.UploadFileAsync(file);
 
         var evidence = new EvidenceFile
         {
             Id = Guid.NewGuid(),
             FileName = file.FileName,
-            StoragePath = url,
+            StoragePath = key,
             ContentType = file.ContentType,
             FileSizeBytes = file.Length,
             UploadedAt = DateTime.UtcNow,
@@ -160,7 +160,7 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
         {
             fileId = evidence.Id,
             fileName = evidence.FileName,
-            url = url
+            url = storage.GetPresignedUrl(key)
         });
     }
 
@@ -175,7 +175,7 @@ public class UploadController(AppDbContext db, IStorageService storage ) : Contr
             {
                 id = e.Id,
                 fileName = e.FileName,
-                url = e.StoragePath
+                url = storage.GetPresignedUrl(e.StoragePath)
             })
             .ToListAsync();
 

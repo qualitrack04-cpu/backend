@@ -19,12 +19,17 @@ public class LocalStorageService : IStorageService
         using var stream = new FileStream(filePath, FileMode.Create);
         await file.CopyToAsync(stream);
 
-        return $"{_baseUrl}/uploads/{fileName}";
+        return $"uploads/{fileName}";
     }
 
-    public async Task DeleteFileAsync(string fileUrl)
+    public string GetPresignedUrl(string key, int expiryHours = 24)
     {
-        var fileName = Path.GetFileName(fileUrl);
+        return $"{_baseUrl}/{key}";
+    }
+
+    public async Task DeleteFileAsync(string key)
+    {
+        var fileName = Path.GetFileName(key);
         var filePath = Path.Combine(_uploadPath, fileName);
 
         if (File.Exists(filePath))
