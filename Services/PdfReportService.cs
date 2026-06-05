@@ -59,7 +59,7 @@ public class PdfReportService
                     table.Cell().Padding(4).Text(value);
                 }
 
-                InfoRow("Audit ID", $"A-{plan.Year}-{plan.Id.ToString()[..3].ToUpper()}");
+                InfoRow("Audit ID", $"A-{plan.Year}-{session.Id.ToString()[..8].ToUpper()}");
                 InfoRow("Department", schedule.Department);
                 InfoRow("Auditor", schedule.AuditorName);
                 InfoRow("Audit Date", schedule.ScheduledDate.ToString("dd MMM yyyy"));
@@ -68,16 +68,15 @@ public class PdfReportService
             });
 
             // ===== AUDIT SUMMARY =====
-            col.Item().PaddingTop(16).Column(s =>
+            if (!string.IsNullOrEmpty(session.Summary?.Content))
             {
-                s.Item().Background("#f0f4f8").Padding(8).Text("Audit Summary")
-                    .FontSize(12).Bold();
-                s.Item().Padding(8).Text(
-                    string.IsNullOrEmpty(plan.Description)
-                        ? $"Audit dilakukan pada departemen {schedule.Department} berdasarkan standar {plan.Standard} untuk mengevaluasi kepatuhan proses operasional, dokumentasi, dan implementasi prosedur kualitas."
-                        : plan.Description
-                );
-            });
+                col.Item().PaddingTop(12).Column(s =>
+                {
+                    s.Item().Background("#f0f4f8").Padding(8).Text("Audit Summary")
+                        .FontSize(12).Bold();
+                    s.Item().Padding(8).Text(session.Summary!.Content);
+                });
+            }
 
             // ===== CHECKLIST RESULT =====
             col.Item().PaddingTop(16).Column(s =>
