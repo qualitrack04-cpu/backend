@@ -216,7 +216,7 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
                                         evidenceImages.TryGetValue(ev.StoragePath, out var imageBytes);
                                         if(imageBytes != null)
                                         {
-                                            fc.Item().PaddingTop(4).MaxHeight(200).Image(imageBytes).FitWidth();
+                                            fc.Item().PaddingTop(4).Height(180).Image(imageBytes).FitArea();
                                         }
                                         else
                                         {
