@@ -5,9 +5,9 @@ using QualiTrack.Models;
 
 namespace QualiTrack.Services;
 
-public class PdfReportService
+public class PdfReportService(IStorageService storage, IWebHostEnvironment env, IHttpClientFactory httpClientFactory)
 {
-    public byte[] GenerateAuditReport(AuditSession session)
+    public async Task<byte[]> GenerateAuditReport(AuditSession session)
     {
         QuestPDF.Settings.License = LicenseType.Community;
 
@@ -34,6 +34,30 @@ public class PdfReportService
                 });
             });
         }).GeneratePdf();
+    }
+
+    private async Task<byte[]?> GetImageByteAsync(string storagePath)
+    {
+        try
+        {
+            // Local - baca dari disk
+            var localPath = Path.Combine(env.ContentRootPath, "Uploads", Path.GetFileName(storagePath));
+            if(File.Exists(localPath))
+                return await File.ReadAllBytesAsync(localPath);
+
+            // S3 - download via presignet URL
+            var url = storage.GetPresignedUrl(storagePath);
+            var client = httpClientFactory.CreateClient();
+            var response = await client.GetAsync(url);
+            if(response.IsSuccessStatusCode)
+                return await response.Content.ReadAsByteArrayAsync();
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private void ComposeAll(IContainer container, AuditSession session, AuditSchedule schedule, AuditPlan plan, List<AuditResponse> responses, List<Finding> findings)
@@ -106,10 +130,8 @@ public class PdfReportService
                             static TextStyle HText() =>
                                 TextStyle.Default.FontColor("#ffffff").FontSize(9).Bold();
 
-                            h.Cell().Element(HCell).Text("Clause").Style(HText());
                             h.Cell().Element(HCell).Text("Checklist").Style(HText());
                             h.Cell().Element(HCell).Text("Result").Style(HText());
-                            h.Cell().Element(HCell).Text("Note").Style(HText());
                         });
 
                         for (int i = 0; i < responses.Count; i++)
@@ -174,9 +196,17 @@ public class PdfReportService
                                 if (findingEvidences.Any())
                                 {
                                     fc.Item().PaddingTop(4).Text("Evidence:").FontSize(9).SemiBold();
-                                    foreach (var ev in findingEvidences)
+                                    foreach(var ev in findingEvidences)
                                     {
-                                        fc.Item().Text($"📎 {ev.FileName}").FontSize(9).FontColor("#1565c0");
+                                        var imageBytes = GetImageByteAsync(ev.StoragePath).Result;
+                                        if(imageBytes != null)
+                                        {
+                                            fc.Item().PaddingTop(4).Image(imageBytes).FitWidth();
+                                        }
+                                        else
+                                        {
+                                            fc.Item().Text($"📎 {ev.FileName}").FontSize(9).FontColor("#1565c0");
+                                        }
                                     }
                                 }
                             });

@@ -32,7 +32,7 @@ public class PdfController(AppDbContext db, PdfReportService pdfService) : Contr
         if (session is null)
             return NotFound(new { message = "Sesi audit tidak ditemukan" });
 
-        var pdf = pdfService.GenerateAuditReport(session);
+        var pdf = await pdfService.GenerateAuditReport(session);
         return File(pdf, "application/pdf", $"audit-report-{sessionId}.pdf");
     }
 }
