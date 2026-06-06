@@ -31,6 +31,20 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
             }
         }
 
+        foreach(var r in responses)
+        {
+            foreach(var ev in r.Evidences ?? [])
+            {
+                if (!evidenceImages.ContainsKey(ev.StoragePath))
+                {
+                    var bytes = await GetImageBytesAsync(ev.StoragePath);
+                    if(bytes != null)
+                        evidenceImages[ev.StoragePath] = bytes;
+                }
+                
+            }
+        }
+
         return Document.Create(container =>
         {
             container.Page(page =>
@@ -189,7 +203,11 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
                                 rc.Item().Text(r.ChecklistItem?.Question ?? "-").FontSize(9).FontColor("#555555");
                                 foreach (var ev in r.Evidences!)
                                 {
-                                    rc.Item().Text($"📎 {ev.FileName}").FontSize(9).FontColor("#1565c0");
+                                    evidenceImages.TryGetValue(ev.StoragePath, out var imgBytes);
+                                    if(imgBytes != null)
+                                        rc.Item().PaddingTop(4).Height(180).Image(imgBytes).FitArea();
+                                    else
+                                        rc.Item().Text($"📎 {ev.FileName}").FontSize(9).FontColor("#1565c0");
                                 }
                             });
                         }
