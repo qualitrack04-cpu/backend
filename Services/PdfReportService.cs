@@ -83,7 +83,7 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
                     table.Cell().Padding(4).Text(value);
                 }
 
-                InfoRow("Audit ID", $"A-{plan.Year}-{session.Id.ToString()[..8].ToUpper()}");
+                InfoRow("Audit ID", $"{session.Id.ToString()[..8].ToUpper()}");
                 InfoRow("Department", schedule.Department);
                 InfoRow("Auditor", schedule.AuditorName);
                 InfoRow("Audit Date", schedule.ScheduledDate.ToString("dd MMM yyyy"));
