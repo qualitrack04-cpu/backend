@@ -16,6 +16,21 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
         var responses = session.Responses?.ToList() ?? [];
         var findings = session.Findings?.ToList() ?? [];
 
+        // Pre-download semua evidence images
+        var evidenceImages = new Dictionary<string, byte[]>();
+        foreach(var f in findings)
+        {
+            foreach(var ev in f.Evidences ?? [])
+            {
+                if (!evidenceImages.ContainsKey(ev.StoragePath))
+                {
+                    var bytes = await GetImageBytesAsync(ev.StoragePath);
+                    if(bytes != null)
+                        evidenceImages[ev.StoragePath] = bytes;
+                }
+            }
+        }
+
         return Document.Create(container =>
         {
             container.Page(page =>
@@ -24,7 +39,7 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
                 page.Margin(2, Unit.Centimetre);
                 page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
 
-                page.Content().Element(content => ComposeAll(content, session, schedule, plan, responses, findings));
+                page.Content().Element(content => ComposeAll(content, session, schedule, plan, responses, findings, evidenceImages));
                 page.Footer().AlignCenter().Text(x =>
                 {
                     x.Span("QualiTrack — Halaman ");
@@ -36,7 +51,7 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
         }).GeneratePdf();
     }
 
-    private async Task<byte[]?> GetImageByteAsync(string storagePath)
+    private async Task<byte[]?> GetImageBytesAsync(string storagePath)
     {
         try
         {
@@ -60,7 +75,7 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
         }
     }
 
-    private void ComposeAll(IContainer container, AuditSession session, AuditSchedule schedule, AuditPlan plan, List<AuditResponse> responses, List<Finding> findings)
+    private void ComposeAll(IContainer container, AuditSession session, AuditSchedule schedule, AuditPlan plan, List<AuditResponse> responses, List<Finding> findings, Dictionary<string, byte[]> evidenceImages)
     {
         container.Column(col =>
         {
@@ -198,7 +213,7 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
                                     fc.Item().PaddingTop(4).Text("Evidence:").FontSize(9).SemiBold();
                                     foreach(var ev in findingEvidences)
                                     {
-                                        var imageBytes = GetImageByteAsync(ev.StoragePath).Result;
+                                        evidenceImages.TryGetValue(ev.StoragePath, out var imageBytes);
                                         if(imageBytes != null)
                                         {
                                             fc.Item().PaddingTop(4).Image(imageBytes).FitWidth();
