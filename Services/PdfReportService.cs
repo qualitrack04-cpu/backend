@@ -83,7 +83,7 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
                     table.Cell().Padding(4).Text(value);
                 }
 
-                InfoRow("Audit ID", $"{session.Id.ToString()[..8].ToUpper()}");
+                InfoRow("Audit ID", $"{plan.Id.ToString()[..8].ToUpper()}");
                 InfoRow("Department", schedule.Department);
                 InfoRow("Auditor", schedule.AuditorName);
                 InfoRow("Audit Date", schedule.ScheduledDate.ToString("dd MMM yyyy"));
@@ -154,7 +154,7 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
 
             // ===== EVIDENCE DOCUMENTATION =====
             var passResponses = responses.Where(r => r.Answer == ResponseAnswer.Conform && r.Evidences != null && r.Evidences.Any()).ToList();
-            var failFindings = findings.Where(f => f.Category == FindingCategory.MajorNC || f.Category == FindingCategory.MinorNC).ToList();
+            var failFindings = findings.Where(f => f.Category == FindingCategory.MajorNC || f.Category == FindingCategory.MinorNC || f.Category == FindingCategory.OFI).ToList();
 
             if (passResponses.Any() || failFindings.Any())
             {
