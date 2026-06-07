@@ -26,6 +26,8 @@ public class PdfController(AppDbContext db, PdfReportService pdfService) : Contr
                 .ThenInclude(f => f.Evidences)
             .Include(s => s.Responses)
                 .ThenInclude(r => r.ChecklistItem)
+            .Include(s => s.Responses)
+                .ThenInclude(r => r.Evidences)
             .Include(s => s.Summary)
             .FirstOrDefaultAsync(s => s.Id == sessionId);
 
