@@ -1,7 +1,7 @@
 using MimeKit;
 using System.Net.Http.Json;
-// using MailKit.Net.Smtp;   // Uncomment jika mau balik ke SMTP Gmail
-// using MailKit.Security;   // Uncomment jika mau balik ke SMTP Gmail
+using MailKit.Net.Smtp;   // Uncomment jika mau balik ke SMTP Gmail
+using MailKit.Security;   // Uncomment jika mau balik ke SMTP Gmail
 
 namespace QualiTrack.Services;
 
@@ -15,34 +15,34 @@ public class EmailService(IConfiguration config) : IEmailService
 {
     private async Task SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
-        // [B] Resend API (aktif)
-        // Butuh di appsettings.json: "Email:From" dan "Email:ResendKey"
-        using var http = new HttpClient();
-        http.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue(
-                "Bearer", config["Email:ResendKey"]!);
-        var payload = new
-        {
-            from    = config["Email:From"]!,
-            to      = new[] { toEmail },
-            subject = subject,
-            html    = htmlBody
-        };
-        var response = await http.PostAsJsonAsync("https://api.resend.com/emails", payload);
-        response.EnsureSuccessStatusCode();
+        // // [B] Resend API (aktif)
+        // // Butuh di appsettings.json: "Email:From" dan "Email:ResendKey"
+        // using var http = new HttpClient();
+        // http.DefaultRequestHeaders.Authorization =
+        //     new System.Net.Http.Headers.AuthenticationHeaderValue(
+        //         "Bearer", config["Email:ResendKey"]!);
+        // var payload = new
+        // {
+        //     from    = config["Email:From"]!,
+        //     to      = new[] { toEmail },
+        //     subject = subject,
+        //     html    = htmlBody
+        // };
+        // var response = await http.PostAsJsonAsync("https://api.resend.com/emails", payload);
+        // response.EnsureSuccessStatusCode();
 
         // [A] SMTP Gmail — comment blok B, uncomment ini:
-        // var email = new MimeMessage();
-        // email.From.Add(MailboxAddress.Parse(config["Email:From"]!));
-        // email.To.Add(MailboxAddress.Parse(toEmail));
-        // email.Subject = subject;
-        // email.Body = new TextPart("html") { Text = htmlBody };
-        // using var smtp = new SmtpClient();
-        // smtp.ServerCertificateValidationCallback = (_, _, _, _) => true;
-        // await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
-        // await smtp.AuthenticateAsync(config["Email:From"]!, config["Email:Password"]!);
-        // await smtp.SendAsync(email);
-        // await smtp.DisconnectAsync(true);
+        var email = new MimeMessage();
+        email.From.Add(MailboxAddress.Parse(config["Email:From"]!));
+        email.To.Add(MailboxAddress.Parse(toEmail));
+        email.Subject = subject;
+        email.Body = new TextPart("html") { Text = htmlBody };
+        using var smtp = new SmtpClient();
+        smtp.ServerCertificateValidationCallback = (_, _, _, _) => true;
+        await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+        await smtp.AuthenticateAsync(config["Email:From"]!, config["Email:Password"]!);
+        await smtp.SendAsync(email);
+        await smtp.DisconnectAsync(true);
     }
 
     public async Task SendOtpAsync(string toEmail, string otp)
