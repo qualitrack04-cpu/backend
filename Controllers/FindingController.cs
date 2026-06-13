@@ -14,7 +14,6 @@ namespace QualiTrack.Controllers;
 [ValidateModelAttribute]
 public class FindingController(AppDbContext db) : ControllerBase
 {
-    // API: GET /api/Finding
     [HttpGet]
     [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> GetAll(
@@ -23,7 +22,7 @@ public class FindingController(AppDbContext db) : ControllerBase
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to)
     {
-        var query = db.Findings.AsQueryable();
+        var query = db.Findings.Include(f => f.Reporter).AsQueryable();
         if (status.HasValue) query = query.Where(f => f.Status == status);
         if (category.HasValue) query = query.Where(f => f.Category == category);
         if (from.HasValue) query = query.Where(f => f.FoundAt >= from.Value);
@@ -31,37 +30,32 @@ public class FindingController(AppDbContext db) : ControllerBase
         return Ok(await query.ToListAsync());
     }
 
-    // API: GET /api/Finding/{id}
     [HttpGet("{id}")]
     [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var finding = await db.Findings.FirstOrDefaultAsync(f => f.Id == id);
+        var finding = await db.Findings.Include(f => f.Reporter).FirstOrDefaultAsync(f => f.Id == id);
         return finding is null ? NotFound() : Ok(finding);
     }
 
-    // API: GET /api/Finding/without-capa
     [HttpGet("without-capa")]
     [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
     public async Task<IActionResult> GetWithoutCapa()
     {
-        var findingsWithCapa = await db.CAPAs
-            .Select(c => c.FindingId)
-            .ToListAsync();
-
+        var findingsWithCapa = await db.CAPAs.Select(c => c.FindingId).ToListAsync();
         var findings = await db.Findings
+            .Include(f => f.Reporter)
             .Where(f => !findingsWithCapa.Contains(f.Id))
             .ToListAsync();
-
         return Ok(new { total = findings.Count, data = findings });
     }
 
-    // API: GET /api/Finding/by-session/{sessionId}
     [HttpGet("by-session/{sessionId:guid}")]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> GetBySession(Guid sessionId)
     {
         var findings = await db.Findings
+            .Include(f => f.Reporter)
             .Where(f => f.SessionId == sessionId)
             .ToListAsync();
 
@@ -70,25 +64,28 @@ public class FindingController(AppDbContext db) : ControllerBase
             total = findings.Count,
             data = findings.Select(f => new
             {
-                f.Id,
-                f.Title,
-                f.Department,
-                f.Category,
-                f.Description,
-                f.ClauseRef,
-                f.FoundAt,
-                f.Status,
-                f.SessionId,
-                f.ChecklistItemId  // ✅ penting untuk mapping ke checklist item
+                f.Id, f.Title, f.Department, f.Category,
+                f.Description, f.ClauseRef, f.FoundAt, f.Status,
+                f.SessionId, f.ChecklistItemId,
+                f.ReporterName,
+                f.ReporterId,
+                ReporterFullName = f.Reporter?.FullName
             })
         });
     }
 
-    // API: POST /api/Finding
     [HttpPost]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> Create([FromBody] CreateFindingRequest req)
     {
+        // Auto-resolve ReporterName dari ReporterId kalau diisi
+        string reporterName = req.ReporterName;
+        if (req.ReporterId.HasValue && string.IsNullOrEmpty(reporterName))
+        {
+            var reporter = await db.Users.FindAsync(req.ReporterId.Value);
+            reporterName = reporter?.FullName ?? string.Empty;
+        }
+
         var finding = new Finding
         {
             Id = Guid.NewGuid(),
@@ -96,7 +93,8 @@ public class FindingController(AppDbContext db) : ControllerBase
             Department = req.Department,
             SessionId = req.SessionId,
             ChecklistItemId = req.ChecklistItemId,
-            ReporterName = req.ReporterName,
+            ReporterName = reporterName,
+            ReporterId = req.ReporterId,
             Category = req.Category ?? FindingCategory.MinorNC,
             Description = req.Description,
             ClauseRef = req.ClauseRef,
@@ -108,16 +106,24 @@ public class FindingController(AppDbContext db) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = finding.Id }, finding);
     }
 
-    // API: PUT /api/Finding/{id}
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,QualityManager,Auditor")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateFindingRequest req)
     {
         var finding = await db.Findings.FindAsync(id);
         if (finding is null) return NotFound();
+
+        string reporterName = req.ReporterName;
+        if (req.ReporterId.HasValue && string.IsNullOrEmpty(reporterName))
+        {
+            var reporter = await db.Users.FindAsync(req.ReporterId.Value);
+            reporterName = reporter?.FullName ?? string.Empty;
+        }
+
         finding.Title = req.Title;
         finding.Department = req.Department;
-        finding.ReporterName = req.ReporterName;
+        finding.ReporterName = reporterName;
+        finding.ReporterId = req.ReporterId;
         finding.Category = req.Category ?? finding.Category;
         finding.Description = req.Description;
         finding.ClauseRef = req.ClauseRef;
@@ -125,7 +131,6 @@ public class FindingController(AppDbContext db) : ControllerBase
         return Ok(finding);
     }
 
-    // API: PATCH /api/Finding/{id}/status
     [HttpPatch("{id}/status")]
     [Authorize(Roles = "Admin,QualityManager")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] FindingStatus status)
@@ -137,7 +142,6 @@ public class FindingController(AppDbContext db) : ControllerBase
         return NoContent();
     }
 
-    // API: DELETE /api/Finding/{id}
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
