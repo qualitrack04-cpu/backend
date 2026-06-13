@@ -9,7 +9,9 @@ public class Finding
     public AuditSession? Session { get; set; }
     public Guid? ChecklistItemId { get; set; }
     public string ReporterName { get; set; } = string.Empty;
-    public string Title {get; set; } = string.Empty;
+    public Guid? ReporterId { get; set; }
+    public User? Reporter { get; set; }
+    public string Title { get; set; } = string.Empty;
     public string Department { get; set; } = string.Empty;
     public FindingCategory Category { get; set; }
     public string Description { get; set; } = string.Empty;
