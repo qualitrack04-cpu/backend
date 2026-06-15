@@ -29,8 +29,25 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         if (req.Password.Length < 6)
             return BadRequest(new { message = "Password minimal 6 karakter" });
 
-        if (await db.Users.AnyAsync(u => u.Email == req.Email))
-            return BadRequest(new { message = "Email sudah terdaftar" });
+        var existingUser = await db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
+        if(existingUser != null)
+        {
+            if(existingUser.EmailVerified)
+                return BadRequest(new { message = "Email sudah terdaftar"});
+
+            var newOtp = new Random().Next(1000, 9999).ToString();
+            existingUser.OtpCode = BCrypt.Net.BCrypt.HashPassword(newOtp);
+            existingUser.OtpExpiry = DateTime.UtcNow.AddMinutes(5);
+            await db.SaveChangesAsync();
+            await emailService.SendRegistrationOtpAsync(existingUser.Email, newOtp);
+
+            return Ok(new
+            {
+                message = "Email sudah terdaftar tapi belum diverifikasi. Kode OTP baru telah dikirim ke email kamu.",
+                email = existingUser.Email
+            });
+        }
+        
 
         var otp = new Random().Next(1000, 9999).ToString();
 
