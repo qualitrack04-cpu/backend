@@ -18,13 +18,13 @@ namespace QualiTrack.Controllers;
 [ValidateModelAttribute]
 public class AuthController(AppDbContext db, IConfiguration config, IEmailService emailService) : ControllerBase
 {
-    private static readonly string[] ValidRoles = ["QualityManager", "Auditor", "Auditee", "Admin"];
-
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest req)
     {
-        if (!ValidRoles.Contains(req.Role))
-            return BadRequest(new { message = "Role tidak valid. Pilih: QualityManager, Auditor, Auditee, Admin" });
+        if (!UserRoles.IsValidRole(req.Role))
+            return BadRequest(new { message = "Role tidak valid. Pilih: QualityManager, Auditor, AuditorInternal, Auditee, Admin" });
+
+        req = req with { Role = UserRoles.NormalizeRole(req.Role) };
 
         if (req.Password.Length < 6)
             return BadRequest(new { message = "Password minimal 6 karakter" });
@@ -140,7 +140,7 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
             return Unauthorized(new { message = "Email belum diverifikasi. Cek inbox email kamu." });
 
         var token = GenerateJwt(user);
-        return Ok(new AuthResponse(token, user.Role, user.FullName));
+        return Ok(new AuthResponse(token, UserRoles.GetClaimRole(user.Role), user.FullName));
     }
 
     [HttpGet("whoami")]
@@ -160,7 +160,7 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
     public async Task<IActionResult> GetAuditors()
     {
         var auditors = await db.Users
-            .Where(u => u.Role == "Auditor" || u.Role == "QualityManager")
+            .Where(u => u.Role == UserRoles.AuditorInternal || u.Role == UserRoles.Auditor || u.Role == UserRoles.QualityManager)
             .Select(u => new { u.Id, u.FullName, u.Role })
             .ToListAsync();
 
@@ -174,7 +174,17 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         var query = db.Users.AsQueryable();
 
         if (!string.IsNullOrEmpty(role))
-            query = query.Where(u => u.Role == role);
+        {
+            var normalizedRole = role == UserRoles.Auditor ? UserRoles.AuditorInternal : role;
+            if (normalizedRole == UserRoles.AuditorInternal)
+            {
+                query = query.Where(u => u.Role == UserRoles.AuditorInternal || u.Role == UserRoles.Auditor);
+            }
+            else
+            {
+                query = query.Where(u => u.Role == normalizedRole);
+            }
+        }
 
         var users = await query
             .Select(u => new { u.Id, u.FullName, u.Email, u.Role, u.Status })
@@ -269,7 +279,7 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role),
+            new Claim(ClaimTypes.Role, UserRoles.GetClaimRole(user.Role)),
             new Claim(ClaimTypes.Name, user.FullName)
         };
 
