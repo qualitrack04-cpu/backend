@@ -283,6 +283,63 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+    
+    [HttpPost("upload-profile-photo")]
+    [Authorize]
+    public async Task<IActionResult> UploadProfilePhoto(IFormFile file)
+    {
+        if(file == null || file.Length == 0)
+            return BadRequest(new { message = "File tidak boleh kosong" });
 
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/jpg" };
+        if(!allowedTypes.Contains(file.ContentType))
+            return BadRequest(new { message = "file harus berupa gambar (jpg/png)" });
 
+        var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var user = await db.Users.FindAsync(userId);
+        if(user is null)
+            return NotFound(new { message = "User tidak ditemukan" });
+
+        // Hapus foto lama kalau ada 
+        if (!string.IsNullOrEmpty(user.ProfilePhotoUrl))
+        {
+            var oldPath = Path.Combine("Uploads", "profiles", Path.GetFileName(user.ProfilePhotoUrl));
+            if(System.IO.File.Exists(oldPath))
+                System.IO.File.Delete(oldPath);
+        }
+
+        // SImpan Foto baru
+        var uploadDir = Path.Combine("Uploads", "profiles");
+        Directory.CreateDirectory(uploadDir);
+        var fileName = $"{userId}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+        var filePath = Path.Combine(uploadDir, fileName);
+
+        using(var stream = new FileStream(filePath, FileMode.Create))
+            await file.CopyToAsync(stream);
+
+        user.ProfilePhotoUrl = $"/uploads/profiles/{fileName}";
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "Foto profil berhasil di upload", url = user.ProfilePhotoUrl });
+    }
+
+    [HttpGet("profile")]
+    [Authorize]
+    public async Task<IActionResult> GetProfile()
+    {
+        var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var user = await db.Users.FindAsync(userId);
+        if(user is null)
+            return NotFound(new { message = "User tidak ditemukan" });
+        
+        return Ok(new
+        {
+            user.Id,
+            user.FullName,
+            user.Email,
+            user.Role,
+            user.Status,
+            user.ProfilePhotoUrl
+        });
+    }
 }
