@@ -19,7 +19,9 @@ public record LoginRequest(
     [EmailAddress(ErrorMessage = "Format email tidak valid")]
     string Email,
     [Required(ErrorMessage = "Password Wajib diisi")]
-    string Password
+    string Password,
+    [Required(ErrorMessage = "Role salah")]
+    string Role
 );
 
 public record AuthResponse(
