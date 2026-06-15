@@ -275,7 +275,7 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
     public async Task<IActionResult> GetPicCandidates()
     {
         var pics = await db.Users
-            .Where(u => u.Status == "Active")
+            .Where(u => u.Status == "Active" && u.Role == "Auditee")
             .Select(u => new { u.Id, u.FullName})
             .ToListAsync();
 
