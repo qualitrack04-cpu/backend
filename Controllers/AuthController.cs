@@ -270,6 +270,18 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         return Ok(new { message = "Password berhasil direset, silakan login" });
     }
 
+    [HttpGet("pic-candidates")]
+    [Authorize]
+    public async Task<IActionResult> GetPicCandidates()
+    {
+        var pics = await db.Users
+            .Where(u => u.Status == "Active")
+            .Select(u => new { u.Id, u.FullName})
+            .ToListAsync();
+
+        return Ok(new { data = pics });
+    }
+
     private string GenerateJwt(User user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
