@@ -32,7 +32,7 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         if (await db.Users.AnyAsync(u => u.Email == req.Email))
             return BadRequest(new { message = "Email sudah terdaftar" });
 
-        var otp = new Random().Next(100000, 999999).ToString();
+        var otp = new Random().Next(1000, 9999).ToString();
 
         var user = new User
         {
@@ -99,7 +99,7 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         if (user.EmailVerified)
             return BadRequest(new { message = "Email sudah diverifikasi" });
 
-        var otp = new Random().Next(100000, 999999).ToString();
+        var otp = new Random().Next(1000, 9999).ToString();
         user.OtpCode = BCrypt.Net.BCrypt.HashPassword(otp);
         user.OtpExpiry = DateTime.UtcNow.AddMinutes(5);
         await db.SaveChangesAsync();
@@ -179,7 +179,7 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         if (user is null)
             return NotFound(new { message = "Email tidak ditemukan" });
 
-        var otp = new Random().Next(100000, 999999).ToString();
+        var otp = new Random().Next(1000, 9999).ToString();
         user.OtpCode = BCrypt.Net.BCrypt.HashPassword(otp);
         user.OtpExpiry = DateTime.UtcNow.AddMinutes(5);
         await db.SaveChangesAsync();
