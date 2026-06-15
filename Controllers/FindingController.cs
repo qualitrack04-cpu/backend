@@ -15,7 +15,7 @@ namespace QualiTrack.Controllers;
 public class FindingController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
     public async Task<IActionResult> GetAll(
         [FromQuery] FindingStatus? status,
         [FromQuery] FindingCategory? category,
@@ -31,7 +31,7 @@ public class FindingController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var finding = await db.Findings.Include(f => f.Reporter).FirstOrDefaultAsync(f => f.Id == id);
@@ -39,7 +39,7 @@ public class FindingController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("without-capa")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
     public async Task<IActionResult> GetWithoutCapa()
     {
         var findingsWithCapa = await db.CAPAs.Select(c => c.FindingId).ToListAsync();
@@ -51,7 +51,7 @@ public class FindingController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("by-session/{sessionId:guid}")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
     public async Task<IActionResult> GetBySession(Guid sessionId)
     {
         var findings = await db.Findings
@@ -75,7 +75,7 @@ public class FindingController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,QualityManager,Auditor")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
     public async Task<IActionResult> Create([FromBody] CreateFindingRequest req)
     {
         // Auto-resolve ReporterName dari ReporterId kalau diisi
@@ -107,7 +107,7 @@ public class FindingController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor")]
+    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateFindingRequest req)
     {
         var finding = await db.Findings.FindAsync(id);
