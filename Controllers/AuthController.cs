@@ -321,7 +321,7 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         var emailTaken = await db.Users.AnyAsync(u => u.Email == req.NewEmail && u.Id != userId);
         if (emailTaken) return BadRequest(new { message = "Email sudah digunakan oleh akun lain" });
 
-        var otp = new Random().Next(100000, 999999).ToString();
+        var otp = new Random().Next(1000, 9999).ToString();
         user.PendingEmail = req.NewEmail;
         user.OtpCode = BCrypt.Net.BCrypt.HashPassword(otp);
         user.OtpExpiry = DateTime.UtcNow.AddMinutes(5);
