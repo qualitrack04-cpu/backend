@@ -204,6 +204,7 @@ public class CapaController(AppDbContext db) : ControllerBase
 
         db.CloseOutVerifications.Add(verification);
         capa.Status = CAPAStatus.Closed;
+        capa.ClosedAt = DateTime.UtcNow;
 
         await db.Findings
             .Where(f => f.Id == capa.FindingId)
@@ -255,6 +256,7 @@ public class CapaController(AppDbContext db) : ControllerBase
             PicId = capa.PicId,
             PicName = capa.Pic?.FullName,
             CreatedAt = capa.CreatedAt,
+            ClosedAt = capa.ClosedAt,
             Actions = capa.Actions.Select(a => new CAPAActionResponseDto
             {
                 Id = a.Id,
