@@ -18,8 +18,6 @@ public class CreateCapaRequest
 
     [Required(ErrorMessage = "Deadline wajib diisi")]
     public DateOnly? Deadline { get; set; }
-
-    [Required(ErrorMessage = "PIC harus diisi")]
     public Guid? PicId { get; set; }
     public string? PicName { get; set; }
 }
