@@ -199,6 +199,40 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         return Ok(new { message = "Logout berhasil" });
     }
 
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req)
+    {
+        var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var user = await db.Users.FindAsync(userId);
+        if (user is null) return NotFound(new { message = "User tidak ditemukan" });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "Password berhasil diubah" });
+    }
+
+    [HttpPut("update-profile")]
+    [Authorize]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest req)
+    {
+        var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var user = await db.Users.FindAsync(userId);
+        if (user is null) return NotFound(new { message = "User tidak ditemukan" });
+
+        var emailExists = await db.Users
+            .AnyAsync(u => u.Email == req.Email && u.Id != userId);
+        if (emailExists)
+            return BadRequest(new { message = "Email sudah dipakai user lain" });
+
+        user.FullName = req.FullName;
+        user.Email = req.Email;
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "Profil berhasil diupdate", data = new { user.FullName, user.Email } });
+    }
+
     [HttpPost("forgot-password/request-otp")]
     public async Task<IActionResult> RequestOtp([FromBody] RequestOtpRequest req)
     {
