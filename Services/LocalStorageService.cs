@@ -6,7 +6,7 @@ public class LocalStorageService : IStorageService
     private readonly string _baseUrl;
     public LocalStorageService(IConfiguration config, IWebHostEnvironment env)
     {
-        _uploadPath = Path.Combine(env.ContentRootPath, "Uploads");
+        _uploadPath = Path.Combine(env.ContentRootPath, "uploads");
         _baseUrl = config["App:BaseUrl"] ?? "http://localhost:5144";
         Directory.CreateDirectory(_uploadPath);
     }

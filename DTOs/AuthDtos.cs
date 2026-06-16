@@ -58,9 +58,17 @@ public record ChangePasswordRequest(
 );
 
 public record UpdateProfileRequest(
-    [Required] string FullName,
-    [Required][EmailAddress(ErrorMessage = "Format email tidak valid")] string Email
+    [Required] string FullName
 );
 
 public record VerifyEmailRequest(string Email, string Otp);
 public record ResendOtpRequest(string Email);
+
+public record RequestEmailChangeOtpRequest(
+    [Required][EmailAddress(ErrorMessage = "Format email tidak valid")]
+    string NewEmail
+);
+
+public record VerifyEmailChangeRequest(
+    [Required] string Otp
+);
