@@ -221,13 +221,7 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         var user = await db.Users.FindAsync(userId);
         if (user is null) return NotFound(new { message = "User tidak ditemukan" });
 
-        var emailExists = await db.Users
-            .AnyAsync(u => u.Email == req.Email && u.Id != userId);
-        if (emailExists)
-            return BadRequest(new { message = "Email sudah dipakai user lain" });
-
         user.FullName = req.FullName;
-        user.Email = req.Email;
         await db.SaveChangesAsync();
 
         return Ok(new { message = "Profil berhasil diupdate", data = new { user.FullName, user.Email } });
@@ -316,6 +310,57 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         return Ok(new { data = pics });
     }
 
+    [HttpPost("request-email-change-otp")]
+    [Authorize]
+    public async Task<IActionResult> RequestEmailChangeOtp([FromBody] RequestEmailChangeOtpRequest req)
+    {
+        var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var user = await db.Users.FindAsync(userId);
+        if (user is null) return NotFound(new { message = "User tidak ditemukan" });
+
+        var emailTaken = await db.Users.AnyAsync(u => u.Email == req.NewEmail && u.Id != userId);
+        if (emailTaken) return BadRequest(new { message = "Email sudah digunakan oleh akun lain" });
+
+        var otp = new Random().Next(100000, 999999).ToString();
+        user.PendingEmail = req.NewEmail;
+        user.OtpCode = BCrypt.Net.BCrypt.HashPassword(otp);
+        user.OtpExpiry = DateTime.UtcNow.AddMinutes(5);
+        await db.SaveChangesAsync();
+
+        await emailService.SendOtpAsync(req.NewEmail, otp);
+
+        return Ok(new { message = $"OTP telah dikirim ke {req.NewEmail}. Berlaku 5 menit." });
+    }
+
+    [HttpPost("verify-email-change")]
+    [Authorize]
+    public async Task<IActionResult> VerifyEmailChange([FromBody] VerifyEmailChangeRequest req)
+    {
+        var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var user = await db.Users.FindAsync(userId);
+        if (user is null) return NotFound(new { message = "User tidak ditemukan" });
+
+        if (string.IsNullOrEmpty(user.PendingEmail))
+            return BadRequest(new { message = "Tidak ada permintaan ganti email yang aktif" });
+
+        if (user.OtpCode is null || user.OtpExpiry is null)
+            return BadRequest(new { message = "OTP belum di-request" });
+
+        if (DateTime.UtcNow > user.OtpExpiry)
+            return BadRequest(new { message = "OTP sudah kadaluarsa, minta OTP baru" });
+
+        if (!BCrypt.Net.BCrypt.Verify(req.Otp, user.OtpCode))
+            return BadRequest(new { message = "OTP tidak valid" });
+
+        user.Email = user.PendingEmail;
+        user.PendingEmail = null;
+        user.OtpCode = null;
+        user.OtpExpiry = null;
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "Email berhasil diperbarui", newEmail = user.Email });
+    }
+
     private string GenerateJwt(User user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
@@ -359,13 +404,13 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         // Hapus foto lama kalau ada 
         if (!string.IsNullOrEmpty(user.ProfilePhotoUrl))
         {
-            var oldPath = Path.Combine("Uploads", "profiles", Path.GetFileName(user.ProfilePhotoUrl));
+            var oldPath = Path.Combine("uploads", "profiles", Path.GetFileName(user.ProfilePhotoUrl));
             if(System.IO.File.Exists(oldPath))
                 System.IO.File.Delete(oldPath);
         }
 
         // SImpan Foto baru
-        var uploadDir = Path.Combine("Uploads", "profiles");
+        var uploadDir = Path.Combine("uploads", "profiles");
         Directory.CreateDirectory(uploadDir);
         var fileName = $"{userId}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
         var filePath = Path.Combine(uploadDir, fileName);

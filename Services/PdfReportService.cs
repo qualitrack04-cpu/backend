@@ -70,7 +70,7 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
         try
         {
             // Local - baca dari disk
-            var localPath = Path.Combine(env.ContentRootPath, "Uploads", Path.GetFileName(storagePath));
+            var localPath = Path.Combine(env.ContentRootPath, "uploads", Path.GetFileName(storagePath));
             if(File.Exists(localPath))
                 return await File.ReadAllBytesAsync(localPath);
 

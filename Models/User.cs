@@ -26,5 +26,6 @@ public class User
     public string? OtpCode { get; set; }
     public DateTime? OtpExpiry { get; set; }
     public string? ProfilePhotoUrl { get; set; }    
+    public string? PendingEmail { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
