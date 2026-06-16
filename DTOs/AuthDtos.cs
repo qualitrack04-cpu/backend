@@ -52,5 +52,15 @@ public record ResetPasswordRequest(
     string ConfirmPassword
 );
 
+public record ChangePasswordRequest(
+    [Required][MinLength(6, ErrorMessage = "Password minimal 6 karakter")]
+    string NewPassword
+);
+
+public record UpdateProfileRequest(
+    [Required] string FullName,
+    [Required][EmailAddress(ErrorMessage = "Format email tidak valid")] string Email
+);
+
 public record VerifyEmailRequest(string Email, string Otp);
 public record ResendOtpRequest(string Email);
