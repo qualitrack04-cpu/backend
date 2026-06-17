@@ -6,7 +6,6 @@ public static class UserRoles
 {
     public const string Admin = "Admin";
     public const string QualityManager = "QualityManager";
-    public const string Auditor = "Auditor";
     public const string AuditorInternal = "AuditorInternal";
     public const string Auditee = "Auditee";
     
@@ -14,16 +13,16 @@ public static class UserRoles
     
     public static bool IsValidRole(string role)
     {
-        return role == Auditor || AllRoles.Contains(role);
+        return AllRoles.Contains(NormalizeRole(role));
     }
 
     public static string NormalizeRole(string role)
     {
-        return role == Auditor ? AuditorInternal : role;
+        return role == "Auditor" ? AuditorInternal : role;
     }
 
     public static string GetClaimRole(string role)
     {
-        return role == AuditorInternal ? Auditor : role;
+        return NormalizeRole(role);
     }
 }

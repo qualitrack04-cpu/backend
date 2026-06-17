@@ -22,7 +22,7 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
     public async Task<IActionResult> Register(RegisterRequest req)
     {
         if (!UserRoles.IsValidRole(req.Role))
-            return BadRequest(new { message = "Role tidak valid. Pilih: QualityManager, Auditor, AuditorInternal, Auditee, Admin" });
+            return BadRequest(new { message = "Role tidak valid. Pilih: QualityManager, AuditorInternal, Auditee, Admin" });
 
         req = req with { Role = UserRoles.NormalizeRole(req.Role) };
 
@@ -160,11 +160,11 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
     public async Task<IActionResult> GetAuditors()
     {
         var auditors = await db.Users
-            .Where(u => u.Role == UserRoles.AuditorInternal || u.Role == UserRoles.Auditor || u.Role == UserRoles.QualityManager)
+            .Where(u => u.Role == UserRoles.AuditorInternal || u.Role == UserRoles.QualityManager)
             .Select(u => new { u.Id, u.FullName, u.Role })
             .ToListAsync();
 
-        return Ok(new { message = "Daftar auditor berhasil diambil", total = auditors.Count, data = auditors });
+        return Ok(new { message = "Daftar AuditorInternal berhasil diambil", total = auditors.Count, data = auditors });
     }
 
     [HttpGet("users")]
@@ -175,10 +175,10 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
 
         if (!string.IsNullOrEmpty(role))
         {
-            var normalizedRole = role == UserRoles.Auditor ? UserRoles.AuditorInternal : role;
+            var normalizedRole = role == UserRoles.AuditorInternal ? UserRoles.AuditorInternal : role;
             if (normalizedRole == UserRoles.AuditorInternal)
             {
-                query = query.Where(u => u.Role == UserRoles.AuditorInternal || u.Role == UserRoles.Auditor);
+                query = query.Where(u => u.Role == UserRoles.AuditorInternal);
             }
             else
             {

@@ -15,7 +15,7 @@ namespace QualiTrack.Controllers;
 public class CapaController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal,Auditee")]
     public async Task<IActionResult> GetAll([FromQuery] CAPAStatus? status)
     {
         var query = db.CAPAs
@@ -35,7 +35,7 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("overdue")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal,Auditee")]
     public async Task<IActionResult> GetOverdue()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -51,7 +51,7 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal,Auditee")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var capa = await db.CAPAs
@@ -66,7 +66,7 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("finding/{findingId}")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal,Auditee")]
     public async Task<IActionResult> Create(Guid findingId, [FromBody] CreateCapaRequest req)
     {
         var finding = await db.Findings.FindAsync(findingId);
@@ -114,7 +114,7 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal,Auditee")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCapaRequestDto req)
     {
         var capa = await db.CAPAs.FindAsync(id);
@@ -136,7 +136,7 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal,Auditee")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] CAPAStatus status)
     {
         var capa = await db.CAPAs.FindAsync(id);
@@ -147,7 +147,7 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("{id}/actions")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal,Auditee")]
     public async Task<IActionResult> AddAction(Guid id, [FromBody] AddCapaActionRequest req)
     {
         var capa = await db.CAPAs.FindAsync(id);
@@ -182,7 +182,7 @@ public class CapaController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("{id}/closeout")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal,Auditee")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal,Auditee")]
     public async Task<IActionResult> CloseOut(Guid id, [FromBody] CloseOutVerificationRequest req)
     {
         var capa = await db.CAPAs.FirstOrDefaultAsync(c => c.Id == id);

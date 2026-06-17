@@ -114,7 +114,7 @@ public class PdfReportService(IStorageService storage, IWebHostEnvironment env, 
 
                 InfoRow("Audit ID", $"{plan.Id.ToString()[..8].ToUpper()}");
                 InfoRow("Department", schedule.Department);
-                InfoRow("Auditor", schedule.AuditorName);
+                InfoRow("AuditorInternal", schedule.AuditorName);
                 InfoRow("Audit Date", schedule.ScheduledDate.ToString("dd MMM yyyy"));
                 InfoRow("Standard", plan.Standard);
                 InfoRow("Audit Status", session.Status.ToString());
