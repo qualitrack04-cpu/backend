@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QualiTrack.Data;
@@ -11,9 +12,11 @@ using QualiTrack.Data;
 namespace QualiTrack.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260617020645_FixAuditorToAuditorInternal")]
+    partial class FixAuditorToAuditorInternal
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -150,8 +153,6 @@ namespace QualiTrack.Migrations
                     b.HasIndex("ChecklistId");
 
                     b.HasIndex("ScheduleId");
-
-                    b.HasIndex("Status", "CompletedAt");
 
                     b.ToTable("AuditSessions");
                 });
@@ -441,66 +442,6 @@ namespace QualiTrack.Migrations
                     b.ToTable("Findings");
                 });
 
-            modelBuilder.Entity("QualiTrack.Models.SpcAnalysis", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("AnalyzedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<Guid>("AnalyzedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<double>("Cp")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("Cpk")
-                        .HasColumnType("double precision");
-
-                    b.Property<int>("DataCount")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsStable")
-                        .HasColumnType("boolean");
-
-                    b.Property<double>("Lcl")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("Lsl")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("Mean")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("ProductName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<double>("StandardDeviation")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<double>("Ucl")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("Usl")
-                        .HasColumnType("double precision");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AnalyzedById");
-
-                    b.ToTable("SpcAnalyses");
-                });
-
             modelBuilder.Entity("QualiTrack.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -699,17 +640,6 @@ namespace QualiTrack.Migrations
                     b.Navigation("Reporter");
 
                     b.Navigation("Session");
-                });
-
-            modelBuilder.Entity("QualiTrack.Models.SpcAnalysis", b =>
-                {
-                    b.HasOne("QualiTrack.Models.User", "AnalyzedBy")
-                        .WithMany()
-                        .HasForeignKey("AnalyzedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AnalyzedBy");
                 });
 
             modelBuilder.Entity("QualiTrack.Models.AuditPlan", b =>

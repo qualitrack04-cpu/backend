@@ -23,7 +23,7 @@ public class AuditResponseController : ControllerBase
 
     // POST /api/AuditResponse/batch
     [HttpPost("batch")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal")]
     public async Task<IActionResult> SaveBatch([FromBody] BatchAuditResponseDto dto)
     {
         var session = await _db.AuditSessions.FindAsync(dto.SessionId);
@@ -62,7 +62,7 @@ public class AuditResponseController : ControllerBase
     // POST /api/AuditResponse/progress
 // Simpan satu jawaban — dipanggil setiap user jawab satu item
     [HttpPost("progress")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal")]
     public async Task<IActionResult> SaveProgress([FromBody] SaveProgressDto dto)
     {
         var session = await _db.AuditSessions.FindAsync(dto.SessionId);
@@ -107,7 +107,7 @@ public class AuditResponseController : ControllerBase
 
     // GET /api/AuditResponse/by-session/{sessionId}
     [HttpGet("by-session/{sessionId:guid}")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal")]
     public async Task<IActionResult> GetBySession(Guid sessionId)
     {
         var responses = await _db.AuditResponses

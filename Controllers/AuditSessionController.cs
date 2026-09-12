@@ -23,7 +23,7 @@ public class AuditSessionController : ControllerBase
 
     // POST /api/AuditSession
     [HttpPost]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal")]
     public async Task<IActionResult> Create([FromBody] CreateAuditSessionDto dto)
     {
         var schedule = await _db.AuditSchedules.FindAsync(dto.ScheduleId);
@@ -64,7 +64,7 @@ public class AuditSessionController : ControllerBase
 
     // GET /api/AuditSession/{id}
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var session = await _db.AuditSessions.FindAsync(id);
@@ -76,7 +76,7 @@ public class AuditSessionController : ControllerBase
 
     // GET /api/AuditSession/by-schedule/{scheduleId}
     [HttpGet("by-schedule/{scheduleId}")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal")]
     public async Task<IActionResult> GetBySchedule(Guid scheduleId)
     {
         var session = await _db.AuditSessions
@@ -90,7 +90,7 @@ public class AuditSessionController : ControllerBase
 
     // PATCH /api/AuditSession/{id}/complete
     [HttpPatch("{id}/complete")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal")]
     public async Task<IActionResult> Complete(Guid id)
     {
         var session = await _db.AuditSessions.FindAsync(id);
@@ -128,7 +128,7 @@ public class AuditSessionController : ControllerBase
 
     // POST /api/AuditSession/{sessionId}/summary
     [HttpPost("{sessionId}/summary")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal")]
     public async Task<IActionResult> CreateSummary(Guid sessionId, [FromBody] CreateAuditSummaryDto dto)
     {
         var session = await _db.AuditSessions
@@ -165,7 +165,7 @@ public class AuditSessionController : ControllerBase
 
     // GET /api/AuditSession/{sessionId}/summary
     [HttpGet("{sessionId}/summary")]
-    [Authorize(Roles = "Admin,QualityManager,Auditor,AuditorInternal")]
+    [Authorize(Roles = "Admin,QualityManager,AuditorInternal")]
     public async Task<IActionResult> GetSummary(Guid sessionId)
     {
         var summary = await _db.AuditSummaries

@@ -21,7 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(connectionString));
 
 // ===============================================================================
-// 2. JWT AUTH 
+// 2. JWT AUTH
 // ===============================================================================
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]!;
@@ -45,7 +45,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 builder.Services.AddScoped<QualiTrack.Services.IEmailService, QualiTrack.Services.EmailService>();
+builder.Services.AddScoped<IQualityScoreService, QualityScoreService>();
+builder.Services.AddScoped<IKpiService, KpiService>();
+builder.Services.AddScoped<IRecentActivityService, RecentActivityService>();
 
 var isRailway = Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT") != null;
 var useS3 = isRailway || builder.Configuration["Storage:UseS3"] == "true";
@@ -77,7 +92,7 @@ builder.Services.AddControllers(options =>
     options.JsonSerializerOptions.ReferenceHandler =
         System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
-    
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -116,6 +131,7 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseStaticFiles();
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
