@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QualiTrack.Data;
@@ -5,6 +6,7 @@ using QualiTrack.Models;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ChecklistController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
@@ -63,6 +65,7 @@ public class ChecklistController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin, QualityManager")]
     public async Task<IActionResult> Create(Checklist checklist)
     {
         checklist.Id = Guid.NewGuid();
@@ -75,6 +78,7 @@ public class ChecklistController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin, QualityManager")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var checklist = await db.Checklists.FindAsync(id);
