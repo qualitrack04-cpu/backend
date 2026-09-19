@@ -230,6 +230,28 @@ public class AuthController(AppDbContext db, IConfiguration config, IEmailServic
         return Ok(new { message = "Profil berhasil diupdate", data = new { user.FullName, user.Email } });
     }
 
+    [HttpDelete("profile-photo")]
+    [Authorize]
+    public async Task<IActionResult> DeleteProfilePhoto()
+    {
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var user = await db.Users.FindAsync(userId);
+        if (user is null)
+            return NotFound(new { message = "User tidak ditemukan" });
+
+        if (string.IsNullOrEmpty(user.ProfilePhotoUrl))
+            return BadRequest(new { message = "Tidak ada foto profil untuk dihapus" });
+
+        var path = Path.Combine("uploads", "profiles", Path.GetFileName(user.ProfilePhotoUrl));
+        if (System.IO.File.Exists(path))
+            System.IO.File.Delete(path);
+
+        user.ProfilePhotoUrl = null;
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "Foto profil berhasil dihapus" });
+    }
+
     [HttpPost("forgot-password/request-otp")]
     public async Task<IActionResult> RequestOtp([FromBody] RequestOtpRequest req)
     {

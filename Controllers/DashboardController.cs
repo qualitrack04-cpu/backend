@@ -25,7 +25,7 @@ public class DashboardController(AppDbContext db) : ControllerBase
         var activeAudit = await db.AuditSessions
             .CountAsync(s => s.Status == AuditSessionStatus.InProgress);
 
-        var totalCapa = await db.CAPAs
+        var totalCapa = await db.CAPAs 
             .CountAsync();
 
         var capaOpen = await db.CAPAs
