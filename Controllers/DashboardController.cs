@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Asn1.X509;
 using QualiTrack.Data;
 using QualiTrack.Models;
 
@@ -17,16 +18,19 @@ public class DashboardController(AppDbContext db) : ControllerBase
     // ============================================================
     [HttpGet("summary")]
     [Authorize(Roles = "Admin,QualityManager,AuditorInternal")]
-    public async Task<IActionResult> GetSummary([FromQuery] int? year)
+    public async Task<IActionResult> GetSummary([FromQuery] int? year, [FromQuery] int? month)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var targetMonth = month ?? DateTime.UtcNow.Month;
+        var targetYear = year ?? DateTime.UtcNow.Year;
 
         // Filter audit session berdasarkan tahun (misal dari createdAt / schedule)
         var activeAudit = await db.AuditSessions
             .CountAsync(s => s.Status == AuditSessionStatus.InProgress);
 
         var totalCapa = await db.CAPAs 
-            .CountAsync();
+            .CountAsync(c => c.CreatedAt.Month == targetMonth
+             && c.CreatedAt.Year == targetYear);
 
         var capaOpen = await db.CAPAs
             .CountAsync(c => c.Status == CAPAStatus.Open || c.Status == CAPAStatus.InProgress);
