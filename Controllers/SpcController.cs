@@ -144,6 +144,19 @@ public class SpcController(AppDbContext db) : ControllerBase
         });
     }
 
+    [HttpGet("list-units")]
+    public async Task<IActionResult> GetActiveUnits()
+    {
+        // Hanya ambil unit yang aktif untuk ditampilkan di dropdown
+        var units = await db.SpcUnits
+            .Where(u => u.IsActive)
+            .OrderBy(u => u.Name)
+            .Select(u => new { u.Id, u.Name, u.Symbol })
+            .ToListAsync();
+
+        return Ok(new { total = units.Count, data = units });
+    }
+
     //GET /api/spc/history?period=3m&productName=xxx
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory(
@@ -197,9 +210,12 @@ public class SpcController(AppDbContext db) : ControllerBase
     }
 
     //GET /api/spc/{id} — detail satu analisis
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(Guid id)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(string id)
     {
+        if (!Guid.TryParse(id, out var guidId))
+            return NotFound(new { message = "Format ID tidak valid" });
+
         var analysis = await db.SpcAnalyses.FindAsync(id);
         if (analysis is null)
             return NotFound(new { message = "Analisis SPC tidak ditemukan" });
