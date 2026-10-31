@@ -32,7 +32,11 @@ public class FindingController(AppDbContext db) : ControllerBase
             query = query.Where(f => f.Category!.Name == categoryName);
         if (from.HasValue) query = query.Where(f => f.FoundAt >= from.Value);
         if (to.HasValue) query = query.Where(f => f.FoundAt <= to.Value);
-        return Ok(await query.ToListAsync());
+
+        var findings = await query.ToListAsync();
+        var result = findings.Select(MapToResponseDto).ToList();
+
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
@@ -43,7 +47,10 @@ public class FindingController(AppDbContext db) : ControllerBase
             .Include(f => f.Reporter)
             .Include(f => f.Category)
             .FirstOrDefaultAsync(f => f.Id == id);
-        return finding is null ? NotFound() : Ok(finding);
+
+        if (finding is null) return NotFound();
+
+        return Ok(MapToResponseDto(finding));
     }
 
     [HttpGet("without-capa")]
@@ -63,29 +70,17 @@ public class FindingController(AppDbContext db) : ControllerBase
     public async Task<IActionResult> GetBySession(Guid sessionId)
     {
         var findings = await db.Findings
+            .Include(f => f.Category)
             .Include(f => f.Reporter)
             .Where(f => f.SessionId == sessionId)
             .ToListAsync();
 
+        var result = findings.Select(MapToResponseDto).ToList();
+
         return Ok(new
         {
-            total = findings.Count,
-            data = findings.Select(f => new
-            {
-                f.Id,
-                f.Title,
-                f.Department,
-                f.Category,
-                f.Description,
-                f.ClauseRef,
-                f.FoundAt,
-                f.Status,
-                f.SessionId,
-                f.ChecklistItemId,
-                f.ReporterName,
-                f.ReporterId,
-                ReporterFullName = f.Reporter?.FullName
-            })
+            total = result.Count,
+            data = result
         });
     }
 
@@ -138,7 +133,12 @@ public class FindingController(AppDbContext db) : ControllerBase
         };
         db.Findings.Add(finding);
         await db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = finding.Id }, finding);
+        var created = await db.Findings
+            .Include(f => f.Category)
+            .Include(f => f.Reporter)
+            .FirstOrDefaultAsync(f => f.Id == finding.Id);
+
+        return CreatedAtAction(nameof(GetById), new { id = finding.Id }, MapToResponseDto(created!));
     }
 
     [HttpPut("{id}")]
@@ -210,7 +210,8 @@ public class FindingController(AppDbContext db) : ControllerBase
         ReporterId = f.ReporterId,
         Title = f.Title,
         Department = f.Department,
-        Category = f.Category!,
+        CategoryId = f.CategoryId,
+        CategoryName = f.Category?.Name,
         Description = f.Description,
         ClauseRef = f.ClauseRef,
         FoundAt = f.FoundAt,

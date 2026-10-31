@@ -38,7 +38,8 @@ public class FindingResponseDto
     public Guid? ReporterId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Department { get; set; } = string.Empty;
-    public FindingCategory Category { get; set; } = null!;
+    public Guid? CategoryId { get; set; }
+    public string? CategoryName { get; set;}
     public string Description { get; set; } = string.Empty;
     public string ClauseRef { get; set; } = string.Empty;
     public DateTime FoundAt { get; set; }
