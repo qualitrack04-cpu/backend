@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 using System.Security.Claims;
 
@@ -70,21 +71,26 @@ public class AdminDashboardController(AppDbContext db) : ControllerBase
             .Take(10)
             .ToList();
 
+        foreach (var activity in recentActivities)
+            activity.TimestampFormatted = DateHelper.FormatDateTime(activity.Timestamp);
+
 
         // Recent changes — aktivitas Admin
-        var recentChanges = await db.AdminActivityLogs
+        var recentChangeLogs = await db.AdminActivityLogs
             .Where(l => l.AdminId == adminId)
             .OrderByDescending(l => l.CreatedAt)
             .Take(10)
-            .Select(l => new
-            {
-                action = l.Action,
-                entityType = l.EntityType,
-                entityName = l.EntityName,
-                description = l.Description,
-                timestamp = l.CreatedAt
-            })
             .ToListAsync();
+
+        var recentChanges = recentChangeLogs.Select(l => new
+        {
+            action = l.Action,
+            entityType = l.EntityType,
+            entityName = l.EntityName,
+            description = l.Description,
+            timestamp = l.CreatedAt,
+            timestampFormatted = DateHelper.FormatDateTime(l.CreatedAt)
+        }).ToList();
 
         return Ok(new
         {

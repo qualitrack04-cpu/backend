@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 using QualiTrack.Services;
 
@@ -61,7 +62,9 @@ public class DepartmentController(AppDbContext db, IStorageService storage, File
             ? AutoColorFor(department.Name)
             : department.Color,
         CreatedAt = department.CreatedAt,
-        UpdatedAt = department.UpdatedAt
+        CreatedAtFormatted = DateHelper.FormatDateTime(department.CreatedAt),
+        UpdatedAt = department.UpdatedAt,
+        UpdatedAtFormatted = DateHelper.FormatDateTime(department.UpdatedAt)
     };
 
     [HttpGet]

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 using QualiTrack.Services;
 using QualiTrack.Constants;
@@ -81,8 +82,10 @@ public class AuditReportController(
                 Department = s.Schedule.Department,
                 AuditorName = s.Schedule.Auditor?.FullName ?? s.Schedule.AuditorName,
                 ScheduledDate = s.Schedule.ScheduledDate,
+                ScheduledDateFormatted = DateHelper.FormatDate(s.Schedule.ScheduledDate),
                 SessionId = s.Id,
                 CompletedAt = s.CompletedAt,
+                CompletedAtFormatted = DateHelper.FormatDateTime(s.CompletedAt),
                 SummaryContent = s.Summary?.Content,
                 TotalFindings = s.Findings.Count,
                 TotalMajorNC = s.Findings.Count(f => f.Category?.Name == DefaultCategories.Major),
@@ -138,9 +141,12 @@ public class AuditReportController(
             Department = session.Schedule.Department,
             AuditorName = session.Schedule.Auditor?.FullName ?? session.Schedule.AuditorName,
             ScheduledDate = session.Schedule.ScheduledDate,
+            ScheduledDateFormatted = DateHelper.FormatDate(session.Schedule.ScheduledDate),
             SessionId = session.Id,
             StartedAt = session.StartedAt,
+            StartedAtFormatted = DateHelper.FormatDateTime(session.StartedAt),
             CompletedAt = session.CompletedAt,
+            CompletedAtFormatted = DateHelper.FormatDateTime(session.CompletedAt),
             SummaryContent = session.Summary?.Content,
             Findings = session.Findings.Select(f => new FindingReportDto
             {
@@ -151,6 +157,7 @@ public class AuditReportController(
                 ClauseRef = f.ClauseRef,
                 Status = f.Status!.ToString(),
                 FoundAt = f.FoundAt,
+                FoundAtFormatted = DateHelper.FormatDate(f.FoundAt),
                 Capa = f.Capa == null ? null : new CapaReportDto
                 {
                     Id = f.Capa.Id,
@@ -159,6 +166,7 @@ public class AuditReportController(
                     PreventiveAction = f.Capa.PreventiveAction,
                     PicName = f.Capa.Pic?.FullName ?? string.Empty,
                     Deadline = f.Capa.Deadline.ToString("yyyy-MM-dd"),
+                    DeadlineFormatted = DateHelper.FormatDate(f.Capa.Deadline),
                     Status = f.Capa.Status!.Name
                 }
             }).ToList()

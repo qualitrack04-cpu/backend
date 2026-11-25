@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QualiTrack.Data;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 using QualiTrack.Services;
 using System.Security.Claims;
@@ -172,7 +173,8 @@ public class UploadController(AppDbContext db,
             url = storage.GetPresignedUrl(evidence.StoragePath),
             ContentType = evidence.ContentType,
             fileSizeBytes = evidence.FileSizeBytes,
-            uploadedAt = evidence.UploadedAt
+            uploadedAt = evidence.UploadedAt,
+            uploadedAtFormatted = DateHelper.FormatDateTime(evidence.UploadedAt)
         });
     }
 

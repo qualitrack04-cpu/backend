@@ -126,7 +126,7 @@ Auth header: `Authorization: Bearer {token}`
 | POST | `/progress` | Simpan progress checklist | ✅ |
 | GET | `/by-session/{sessionId}` | Jawaban berdasarkan sesi | ✅ |
 
-### 📝 Finding — `/api/Finding`
+### 📝 Finding — `/api/findings`
 
 | Method | Endpoint | Deskripsi | Auth |
 |---|---|---|---|
@@ -137,6 +137,19 @@ Auth header: `Authorization: Bearer {token}`
 | POST | `/` | Catat finding baru | ✅ |
 | PUT | `/{id}` | Update finding | ✅ |
 | DELETE | `/{id}` | Hapus finding | ✅ |
+
+**Query Parameters untuk `GET /api/findings`:**
+
+| Parameter | Tipe | Keterangan |
+|---|---|---|
+| `status` | string | `Open`, `InProgress`, `Closed`. Alias yang diterima: `open`, `inprogress`, `in_progress`, `In Progress`, `in-progress`, `closed` |
+| `categoryName` | string | Nama kategori, contoh `Minor NC` |
+| `from` | ISO datetime | `FoundAt >= from` |
+| `to` | ISO datetime | `FoundAt <= to` |
+
+- Hasil diurutkan `FoundAt` terbaru lebih dulu.
+- Nilai `status` tidak valid → `400 { "message": "Status tidak valid. Gunakan Open, InProgress, atau Closed." }`.
+- Contoh: `GET /api/findings?status=In%20Progress&categoryName=Minor%20NC`.
 
 ### 🔧 CAPA — `/api/Capa`
 
@@ -243,6 +256,21 @@ Auth header: `Authorization: Bearer {token}`
 | Method | Endpoint | Deskripsi | Auth |
 |---|---|---|---|
 | GET | `/` | Cek status server | ❌ |
+
+---
+
+## Format Tanggal pada Response
+
+Semua response yang membawa tanggal mengirim **dua representasi**:
+
+| Representasi | Contoh | Kegunaan |
+|---|---|---|
+| ISO 8601 (field lama) | `"2026-08-21T02:15:00Z"` | Sorting, filtering, parsing, perhitungan waktu |
+| Human readable (`*Formatted`) | `"21 August 2026"` / `"21 August 2026, 14:30"` | Langsung ditampilkan di UI |
+
+- Format: `dd MMMM yyyy` (tanggal) dan `dd MMMM yyyy, HH:mm` (timestamp), bahasa Inggris, zona **WIB (Asia/Jakarta)**.
+- Field `*Formatted` bersifat **additive/non-breaking**; field ISO lama tidak diubah.
+- Detail daftar field per endpoint ada di [`docs/CHANGELOG.md`](../docs/CHANGELOG.md).
 
 ---
 

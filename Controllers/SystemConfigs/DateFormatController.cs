@@ -5,6 +5,7 @@ using System.Security.Claims;
 using QualiTrack.Data;
 using QualiTrack.DTOs.SystemConfigs;
 using QualiTrack.Filters;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 using QualiTrack.Constants;
 
@@ -27,7 +28,8 @@ public class DateFormatController(AppDbContext db) : ControllerBase
         var response = new DateFormatResponseDto
         {
             DateFormat = config?.Value ?? "dd-MM-yyyy",
-            UpdateAt = config?.UpdateAt
+            UpdateAt = config?.UpdateAt,
+            UpdateAtFormatted = DateHelper.FormatDateTime(config?.UpdateAt)
         };
 
         return Ok(response);

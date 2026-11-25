@@ -4,6 +4,7 @@ using QualiTrack.Data;
 using QualiTrack.DTOs;
 using QualiTrack.Models;
 using QualiTrack.Helpers;
+using System.Globalization;
 
 namespace QualiTrack.Services;
 
@@ -57,7 +58,7 @@ public class QualityScoreService(AppDbContext db, IMemoryCache cache) : IQuality
                     return new QualityTrendDto
                     {
                         Period = g.Key,
-                        PeriodLabel = new DateTime(year, g.Key, 1).ToString("MM yyyy"),
+                        PeriodLabel = new DateTime(year, g.Key, 1).ToString("MMMM yyyy", CultureInfo.InvariantCulture),
                         TotalSessions = g.Count(),
                         ComplianceScore = totalItems == 0 ? 0 :
                             Math.Round((double)totalAdjustedConform / totalItems * 100, 1),
@@ -115,7 +116,7 @@ public class QualityScoreService(AppDbContext db, IMemoryCache cache) : IQuality
                         {
                             Year = periodGroup.Key.Year,
                             Month = periodGroup.Key.Month,
-                            PeriodLabel = new DateTime(periodGroup.Key.Year, periodGroup.Key.Month, 1).ToString("MMM yyyy"),
+                            PeriodLabel = new DateTime(periodGroup.Key.Year, periodGroup.Key.Month, 1).ToString("MMMM yyyy", CultureInfo.InvariantCulture),
                             TotalSessions = periodGroup.Count(),
                             ComplianceScore = totalItems == 0 ? 0 : Math.Round((double)totalConform / totalItems * 100, 1)
                         };
@@ -155,7 +156,7 @@ public class QualityScoreService(AppDbContext db, IMemoryCache cache) : IQuality
             {
                 Year = g.Key.Year,
                 Month = g.Key.Month,
-                PeriodLabel = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yyyy"),
+                PeriodLabel = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMMM yyyy", CultureInfo.InvariantCulture),
                 OverallScore = Math.Round(g.Average(p => p.ComplianceScore), 1),
                 DepartmentWithDataCount = g.Count()
             })

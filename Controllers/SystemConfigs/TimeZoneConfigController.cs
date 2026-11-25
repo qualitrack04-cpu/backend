@@ -6,6 +6,7 @@ using QualiTrack.Constants;
 using QualiTrack.Data;
 using QualiTrack.DTOs.SystemConfigs;
 using QualiTrack.Filters;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 
 namespace QualiTrack.Controllers.SystemConfigs;
@@ -46,7 +47,8 @@ public class TimeZoneConfigController(AppDbContext db) : ControllerBase
             TimeZone = zoneCode,
             GetSystemTimeZoneId = SystemTimeZoneId,
             UtcOffsets = IndonesiaTimeZones.UtcOffsets.GetValueOrDefault(zoneCode, 7),
-            UpdatedAt = config?.UpdateAt
+            UpdatedAt = config?.UpdateAt,
+            UpdatedAtFormatted = DateHelper.FormatDateTime(config?.UpdateAt)
         };
 
         return Ok(response);

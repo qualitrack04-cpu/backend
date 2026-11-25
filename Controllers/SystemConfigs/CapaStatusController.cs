@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QualiTrack.Data;
 using QualiTrack.DTOs.SystemConfigs;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 using QualiTrack.Constants;
 
@@ -47,6 +48,9 @@ public class CapaStatusController(AppDbContext db) : ControllerBase
             })
             .ToListAsync();
 
+        foreach (var status in statuses)
+            status.CreatedAtFormatted = DateHelper.FormatDateTime(status.CreatedAt);
+
         return Ok(statuses);
     }
 
@@ -90,7 +94,8 @@ public class CapaStatusController(AppDbContext db) : ControllerBase
             IsTerminal = status.IsTerminal,
             IsActive = status.IsActive,
             UsageCount = 0,
-            CreatedAt = status.CreatedAt
+            CreatedAt = status.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(status.CreatedAt)
         };
 
         return CreatedAtAction(nameof(GetCapaStatuses), new { id = status.Id }, response);
@@ -135,7 +140,8 @@ public class CapaStatusController(AppDbContext db) : ControllerBase
             IsTerminal = status.IsTerminal,
             IsActive = status.IsActive,
             UsageCount = await _db.CAPAs.CountAsync(c => c.StatusId == id),
-            CreatedAt = status.CreatedAt
+            CreatedAt = status.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(status.CreatedAt)
         };
         return Ok(response);
     }

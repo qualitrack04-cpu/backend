@@ -5,6 +5,7 @@ using System.Security.Claims;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
 using QualiTrack.Filters;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 using QualiTrack.Constants;
 
@@ -19,22 +20,30 @@ public class FindingController(AppDbContext db) : ControllerBase
     [HttpGet]
     [Authorize(Roles = "Admin,QualityManager,AuditorInternal,Auditee")]
     public async Task<IActionResult> GetAll(
-        [FromQuery] FindingStatus? status,
+        [FromQuery] string? status,
         [FromQuery] string? categoryName,
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to)
     {
+        // Terima nilai enum ("Open", "InProgress", "Closed") sekaligus alias yang
+        // lebih ramah klien ("In Progress", "in_progress", "open").
+        var parsedStatus = ParseStatus(status);
+        if (!string.IsNullOrWhiteSpace(status) && parsedStatus is null)
+            return BadRequest(new { message = "Status tidak valid. Gunakan Open, InProgress, atau Closed." });
+
         var query = db.Findings
             .Include(f => f.Category)
             .Include(f => f.Reporter)
             .AsQueryable();
-        if (status.HasValue) query = query.Where(f => f.Status == status);
+        if (parsedStatus.HasValue) query = query.Where(f => f.Status == parsedStatus.Value);
         if (!string.IsNullOrEmpty(categoryName))
             query = query.Where(f => f.Category!.Name == categoryName);
         if (from.HasValue) query = query.Where(f => f.FoundAt >= from.Value);
         if (to.HasValue) query = query.Where(f => f.FoundAt <= to.Value);
 
-        var findings = await query.ToListAsync();
+        var findings = await query
+            .OrderByDescending(f => f.FoundAt)
+            .ToListAsync();
         var result = findings.Select(MapToResponseDto).ToList();
 
         return Ok(result);
@@ -60,10 +69,15 @@ public class FindingController(AppDbContext db) : ControllerBase
     {
         var findingsWithCapa = await db.CAPAs.Select(c => c.FindingId).ToListAsync();
         var findings = await db.Findings
+            .Include(f => f.Category)
             .Include(f => f.Reporter)
             .Where(f => !findingsWithCapa.Contains(f.Id))
+            .OrderByDescending(f => f.FoundAt)
             .ToListAsync();
-        return Ok(new { total = findings.Count, data = findings });
+        // Gunakan DTO yang sama dengan endpoint list lain supaya bentuk response
+        // (termasuk FoundAtFormatted) konsisten.
+        var result = findings.Select(MapToResponseDto).ToList();
+        return Ok(new { total = result.Count, data = result });
     }
 
     [HttpGet("by-session/{sessionId:guid}")]
@@ -235,6 +249,27 @@ public class FindingController(AppDbContext db) : ControllerBase
         Description = f.Description,
         ClauseRef = f.ClauseRef,
         FoundAt = f.FoundAt,
+        FoundAtFormatted = DateHelper.FormatDate(f.FoundAt),
         Status = f.Status
     };
+
+    private static FindingStatus? ParseStatus(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+
+        var normalized = raw
+            .Trim()
+            .Replace(" ", string.Empty)
+            .Replace("_", string.Empty)
+            .Replace("-", string.Empty)
+            .ToLowerInvariant();
+
+        return normalized switch
+        {
+            "open" => FindingStatus.Open,
+            "inprogress" => FindingStatus.InProgress,
+            "closed" => FindingStatus.Closed,
+            _ => null
+        };
+    }
 }

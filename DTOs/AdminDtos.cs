@@ -12,6 +12,7 @@ public class UserListDto
     public bool EmailVerified { get; set; }
     public string? ProfilePhotoUrl { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? CreatedAtFormatted { get; set; }
 }
 
 public class UpdateUserRoleRequest

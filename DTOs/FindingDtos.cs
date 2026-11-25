@@ -43,5 +43,7 @@ public class FindingResponseDto
     public string Description { get; set; } = string.Empty;
     public string ClauseRef { get; set; } = string.Empty;
     public DateTime FoundAt { get; set; }
+    // Contoh: "21 August 2026" (WIB). ISO FoundAt tetap dikirim untuk kebutuhan sorting/filter.
+    public string? FoundAtFormatted { get; set; }
     public FindingStatus Status { get; set; }
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using QualiTrack.Helpers;
 
 namespace QualiTrack.Controllers;
 
@@ -9,10 +10,13 @@ public class HealthController : ControllerBase
     [HttpGet]
     public IActionResult Get()
     {
+        var timestamp = DateTime.UtcNow;
+
         return Ok(new
         {
             status = "ok",
-            timestamp = DateTime.UtcNow,
+            timestamp,
+            timestampFormatted = DateHelper.FormatDateTime(timestamp),
             environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production",
             version = "1.0.0"
         });

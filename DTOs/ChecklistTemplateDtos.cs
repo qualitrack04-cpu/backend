@@ -24,6 +24,7 @@ public class ChecklistTemplateListDto
     public bool IsSystemTemplate { get; set; }
     public int ItemCount { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? CreatedAtFormatted { get; set; }
 }
 
 // GET Detail (dengan items)
@@ -38,6 +39,7 @@ public class ChecklistTemplateDetailDto
     public bool IsSystemTemplate { get; set; }
     public List<ChecklistItemDto> Items { get; set; } = [];
     public DateTime CreatedAt { get; set; }
+    public string? CreatedAtFormatted { get; set; }
 }
 
 // (POST)

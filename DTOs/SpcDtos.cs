@@ -10,6 +10,7 @@ public class SpcUnitDto
     public string? Description { get; set; }
     public  bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? CreatedAtFormatted { get; set; }
 }
 
 public class CreateSpcUnitRequest
@@ -52,6 +53,7 @@ public class SpcResultDto
     public List<double> OutOfControlPoints { get; set; } = [];
     public int DataCount { get; set; }
     public DateTime AnalyzedAt { get; set; }
+    public string? AnalyzedAtFormatted { get; set; }
     public List<double> Data { get; set; } = [];
     public double? Target { get; set; }
     public string? Unit { get; set; }
@@ -68,6 +70,7 @@ public class SpcHistoryDto
     public string Status { get; set; } = string.Empty;
     public bool IsStable { get; set; }
     public DateTime AnalyzedAt { get; set; }
+    public string? AnalyzedAtFormatted { get; set; }
     public double? Target { get; set; }
     public string? Unit { get; set; }
 }

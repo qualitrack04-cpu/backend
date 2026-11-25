@@ -5,6 +5,7 @@ using QualiTrack.Models;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
 using QualiTrack.Filters;
+using QualiTrack.Helpers;
 using QualiTrack.Services;
 using System.Security.Claims;
 using QualiTrack.Constants;
@@ -60,6 +61,9 @@ public class AdminController(AppDbContext db, IAdminActivityService activityServ
             })
             .ToListAsync();
 
+        foreach (var user in users)
+            user.CreatedAtFormatted = DateHelper.FormatDateTime(user.CreatedAt);
+
         return Ok(new
         {
             total = users.Count,
@@ -89,7 +93,8 @@ public class AdminController(AppDbContext db, IAdminActivityService activityServ
             Status = user.Status,
             EmailVerified = user.EmailVerified,
             ProfilePhotoUrl = user.ProfilePhotoUrl,
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(user.CreatedAt)
         });
     }
 
@@ -219,6 +224,9 @@ public class AdminController(AppDbContext db, IAdminActivityService activityServ
             })
             .ToListAsync();
 
+        foreach (var iso in data)
+            iso.CreatedAtFormatted = DateHelper.FormatDateTime(iso.CreatedAt);
+
         return Ok(new { total = data.Count, data });
     }
 
@@ -241,7 +249,8 @@ public class AdminController(AppDbContext db, IAdminActivityService activityServ
             Code = iso.Code,
             Description = iso.Description,
             IsActive = iso.IsActive,
-            CreatedAt = iso.CreatedAt
+            CreatedAt = iso.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(iso.CreatedAt)
         });
     }
 
@@ -285,7 +294,8 @@ public class AdminController(AppDbContext db, IAdminActivityService activityServ
             Code = iso.Code,
             Description = iso.Description,
             IsActive = iso.IsActive,
-            CreatedAt = iso.CreatedAt
+            CreatedAt = iso.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(iso.CreatedAt)
         });
     }
 
@@ -372,6 +382,9 @@ public class AdminController(AppDbContext db, IAdminActivityService activityServ
             })
             .ToListAsync();
 
+        foreach (var unit in data)
+            unit.CreatedAtFormatted = DateHelper.FormatDateTime(unit.CreatedAt);
+
         return Ok(new { total = data.Count, data });
     }
 
@@ -394,7 +407,8 @@ public class AdminController(AppDbContext db, IAdminActivityService activityServ
             Symbol = unit.Symbol,
             Description = unit.Description,
             IsActive = unit.IsActive,
-            CreatedAt = unit.CreatedAt
+            CreatedAt = unit.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(unit.CreatedAt)
         });
     }
 
@@ -438,7 +452,8 @@ public class AdminController(AppDbContext db, IAdminActivityService activityServ
             Symbol = unit.Symbol,
             Description = unit.Description,
             IsActive = unit.IsActive,
-            CreatedAt = unit.CreatedAt
+            CreatedAt = unit.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(unit.CreatedAt)
         });
     }
 

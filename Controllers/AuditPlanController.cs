@@ -6,6 +6,7 @@ using System.Security.Claims;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
 using QualiTrack.Filters;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 
 namespace QualiTrack.Controllers;
@@ -59,6 +60,7 @@ public class AuditPlanController : ControllerBase
                 Year = plan.Year,
                 Standard = plan.Standard,
                 CreatedAt = plan.CreatedAt,
+                CreatedAtFormatted = DateHelper.FormatDateTime(plan.CreatedAt),
                 Description = plan.Description,
                 Priority = plan.Priority,
                 TotalSchedules = schedules.Count,
@@ -71,10 +73,12 @@ public class AuditPlanController : ControllerBase
                         ? s.Auditor.FullName
                         : s.AuditorName,  // Fallback ke AuditorName jika join gagal
                     ScheduledDate = s.ScheduledDate,
+                    ScheduledDateFormatted = DateHelper.FormatDate(s.ScheduledDate),
                     Department = s.Department,
 
                     IsFinished = completedTimes.ContainsKey(s.Id),
-                    CompletedAt = completedTimes.GetValueOrDefault(s.Id)
+                    CompletedAt = completedTimes.GetValueOrDefault(s.Id),
+                    CompletedAtFormatted = DateHelper.FormatDateTime(completedTimes.GetValueOrDefault(s.Id))
                 }).ToList()
             };
         });
@@ -109,6 +113,7 @@ public class AuditPlanController : ControllerBase
             Year = plan.Year,
             Standard = plan.Standard,
             CreatedAt = plan.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(plan.CreatedAt),
             Description = plan.Description,
             Priority = plan.Priority,
             TotalSchedules = plan.Schedules.Count,
@@ -121,9 +126,11 @@ public class AuditPlanController : ControllerBase
                     ? s.Auditor.FullName
                     : s.AuditorName,  // Fallback ke AuditorName jika join gagal
                 ScheduledDate = s.ScheduledDate,
+                ScheduledDateFormatted = DateHelper.FormatDate(s.ScheduledDate),
                 Department = s.Department,
                 IsFinished = completedTimes.ContainsKey(s.Id),
-                CompletedAt = completedTimes.GetValueOrDefault(s.Id)
+                CompletedAt = completedTimes.GetValueOrDefault(s.Id),
+                CompletedAtFormatted = DateHelper.FormatDateTime(completedTimes.GetValueOrDefault(s.Id))
             }).ToList()
         };
 
@@ -345,6 +352,7 @@ public class AuditPlanController : ControllerBase
             Year = plan.Year,
             Standard = plan.Standard,
             CreatedAt = plan.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(plan.CreatedAt),
             Description = plan.Description,
             Priority = plan.Priority,
             TotalSchedules = plan.Schedules.Count,
@@ -355,9 +363,11 @@ public class AuditPlanController : ControllerBase
                 AuditorId = s.AuditorId ?? Guid.Empty,
                 AuditorName = s.AuditorName,
                 ScheduledDate = s.ScheduledDate,
+                ScheduledDateFormatted = DateHelper.FormatDate(s.ScheduledDate),
                 Department = s.Department,
                 IsFinished = completedTimes.ContainsKey(s.Id),
-                CompletedAt = completedTimes.GetValueOrDefault(s.Id)
+                CompletedAt = completedTimes.GetValueOrDefault(s.Id),
+                CompletedAtFormatted = DateHelper.FormatDateTime(completedTimes.GetValueOrDefault(s.Id))
             }).ToList()
         };
     }

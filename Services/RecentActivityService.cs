@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using QualiTrack.DTOs;
 using QualiTrack.Data;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 
 namespace QualiTrack.Services;
@@ -71,6 +72,8 @@ public class RecentActivityService(AppDbContext db) : IRecentActivityService
 
         foreach (var activity in result)
         {
+            // Format dilakukan dari nilai UTC asli sebelum Timestamp diubah ke WIB.
+            activity.TimestampFormatted = DateHelper.FormatDateTime(activity.Timestamp);
             activity.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(
                 DateTime.SpecifyKind(activity.Timestamp, DateTimeKind.Utc),
                 WibTimeZone);

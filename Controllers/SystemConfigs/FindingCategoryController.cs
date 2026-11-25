@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QualiTrack.Data;
 using QualiTrack.DTOs.SystemConfigs;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 
 namespace QualiTrack.Controllers.SystemConfigs;
@@ -35,6 +36,9 @@ public class FindingCategoryController(AppDbContext db) : ControllerBase
                 CreatedAt = c.CreatedAt
             })
             .ToListAsync();
+
+        foreach (var category in categories)
+            category.CreatedAtFormatted = DateHelper.FormatDateTime(category.CreatedAt);
 
         return Ok(categories);
     }
@@ -72,7 +76,8 @@ public class FindingCategoryController(AppDbContext db) : ControllerBase
             RequiresImmediateAction = category.RequiresImmediateAction,
             IsActive = category.IsActive,
             UsageCount = 0,
-            CreatedAt = category.CreatedAt
+            CreatedAt = category.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(category.CreatedAt)
         };
 
         return CreatedAtAction(nameof(GetFindingCategories), new { id = category.Id }, response);
@@ -111,7 +116,8 @@ public class FindingCategoryController(AppDbContext db) : ControllerBase
             RequiresImmediateAction = category.RequiresImmediateAction,
             IsActive = category.IsActive,
             UsageCount = await _db.Findings.CountAsync(f => f.CategoryId == id),
-            CreatedAt = category.CreatedAt
+            CreatedAt = category.CreatedAt,
+            CreatedAtFormatted = DateHelper.FormatDateTime(category.CreatedAt)
         };
 
         return Ok(response);

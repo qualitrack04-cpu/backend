@@ -146,6 +146,7 @@ public class DashboardController(AppDbContext db, IMemoryCache cache) : Controll
             .Select(g => new
             {
                 day = g.Key,
+                dateFormatted = DateHelper.FormatDate(targetYear, targetMonth, g.Key),
                 departments = g.Select(s => new
                 {
                     department = s.Department,
@@ -211,12 +212,14 @@ public class DashboardController(AppDbContext db, IMemoryCache cache) : Controll
             : 0;
 
         var today = DateHelper.TodayWib();
+        var generatedAt = DateTime.UtcNow;
 
         return Ok(new
         {
             month = targetMonth,
             year = targetYear,
-            generatedAt = DateTime.UtcNow,
+            generatedAt,
+            generatedAtFormatted = DateHelper.FormatDateTime(generatedAt),
             summary = new
             {
                 totalSchedules = schedules.Count,
@@ -243,6 +246,7 @@ public class DashboardController(AppDbContext db, IMemoryCache cache) : Controll
                     department = s.Department,
                     auditorName = s.Auditor?.FullName ?? s.AuditorName,
                     scheduledDate = s.ScheduledDate,
+                    scheduledDateFormatted = DateHelper.FormatDate(s.ScheduledDate),
                     status = session == null ? "NotStarted" : session.Status.ToString(),
                     sessionId = session?.Id,
                     totalFindings = sessionFindings.Count,

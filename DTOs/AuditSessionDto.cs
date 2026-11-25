@@ -20,6 +20,8 @@ public class AuditSessionResponseDto
     public Guid ChecklistId { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime StartedAt { get; set; }
+    public string? StartedAtFormatted { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public string? CompletedAtFormatted { get; set; }
     public string? Notes { get; set; }
 }

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
 using QualiTrack.Filters;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 
 namespace QualiTrack.Controllers;
@@ -53,6 +54,9 @@ public class ChecklistController(AppDbContext db) : ControllerBase
             })
             .ToListAsync();
 
+        foreach (var template in templates)
+            template.CreatedAtFormatted = DateHelper.FormatDateTime(template.CreatedAt);
+
         return Ok(templates);
     }
 
@@ -89,6 +93,8 @@ public class ChecklistController(AppDbContext db) : ControllerBase
 
         if (template is null)
             return NotFound(new { message = "Checklist template tidak ditemukan" });
+
+        template.CreatedAtFormatted = DateHelper.FormatDateTime(template.CreatedAt);
 
         return Ok(template);
     }

@@ -5,6 +5,7 @@ using System.Security.Claims;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
 using QualiTrack.Filters;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 
 namespace QualiTrack.Controllers;
@@ -190,7 +191,8 @@ public class AuditSessionController : ControllerBase
         Id = s.Id,
         AuditSessionId = s.AuditSessionId,
         Content = s.Content,
-        CreatedAt = s.CreatedAt
+        CreatedAt = s.CreatedAt,
+        CreatedAtFormatted = DateHelper.FormatDateTime(s.CreatedAt)
     };
 
     private static AuditSessionResponseDto ToDto(AuditSession s) => new()
@@ -200,7 +202,9 @@ public class AuditSessionController : ControllerBase
         ChecklistId = s.ChecklistId,
         Status = s.Status.ToString(),
         StartedAt = s.StartedAt,
+        StartedAtFormatted = DateHelper.FormatDateTime(s.StartedAt),
         CompletedAt = s.CompletedAt,
+        CompletedAtFormatted = DateHelper.FormatDateTime(s.CompletedAt),
         Notes = s.Notes
     };
 }

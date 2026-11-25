@@ -12,4 +12,5 @@ public class AuditSummaryResponseDto
     public Guid AuditSessionId { get; set; }
     public string Content { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public string? CreatedAtFormatted { get; set; }
 }

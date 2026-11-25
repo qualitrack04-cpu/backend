@@ -11,8 +11,10 @@ public class AuditReportListItemDto
     public string Department { get; set; } = string.Empty;
     public string AuditorName { get; set; } = string.Empty;
     public DateTime ScheduledDate { get; set; }
+    public string? ScheduledDateFormatted { get; set; }
     public Guid SessionId { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public string? CompletedAtFormatted { get; set; }
     public string? SummaryContent { get; set; }
     public int TotalFindings { get; set; }
     public int TotalMajorNC { get; set; }
@@ -36,9 +38,12 @@ public class AuditReportDetailDto
     public string Department { get; set; } = string.Empty;
     public string AuditorName { get; set; } = string.Empty;
     public DateTime ScheduledDate { get; set; }
+    public string? ScheduledDateFormatted { get; set; }
     public Guid SessionId { get; set; }
     public DateTime StartedAt { get; set; }
+    public string? StartedAtFormatted { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public string? CompletedAtFormatted { get; set; }
     public string? SummaryContent { get; set; }
     public List<FindingReportDto> Findings { get; set; } = [];
 }
@@ -52,6 +57,7 @@ public class FindingReportDto
     public string ClauseRef { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public DateTime FoundAt { get; set; }
+    public string? FoundAtFormatted { get; set; }
     public CapaReportDto? Capa { get; set; }
 }
 
@@ -63,5 +69,6 @@ public class CapaReportDto
     public string? PreventiveAction { get; set; }
     public string PicName { get; set; } = string.Empty;
     public string Deadline { get; set; } = string.Empty;
+    public string? DeadlineFormatted { get; set; }
     public string Status { get; set; } = string.Empty;
 }

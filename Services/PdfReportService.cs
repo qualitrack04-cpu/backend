@@ -149,7 +149,7 @@ public class PdfReportService(
                 InfoRow("Audit ID", $"{plan.Id.ToString()[..8].ToUpper()}");
                 InfoRow("Department", schedule.Department);
                 InfoRow("AuditorInternal", schedule.AuditorName);
-                InfoRow("Audit Date", schedule.ScheduledDate.ToString("dd MMM yyyy"));
+                InfoRow("Audit Date", QualiTrack.Helpers.DateHelper.FormatDate(schedule.ScheduledDate));
                 InfoRow("Standard", plan.Standard);
                 InfoRow("Audit Status", session.Status.ToString());
             });

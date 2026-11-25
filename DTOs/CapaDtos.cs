@@ -76,13 +76,17 @@ public class CAPAResponseDto
     public string CorrectiveAction { get; set; } = string.Empty;
     public string? PreventiveAction { get; set; }
     public DateOnly Deadline { get; set; }
+    public string? DeadlineFormatted { get; set; }
     public Guid? StatusId { get; set; }
     public string StatusName { get; set; } = string.Empty;
     public Guid? PicId { get; set; }
     public string? PicName { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? CreatedAtFormatted { get; set; }
     public DateTime? ClosedAt { get; set; }
+    public string? ClosedAtFormatted { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedAtFormatted { get; set; }
     public List<CAPAActionResponseDto> Actions { get; set; } = new();
     public CloseOutResponseDto? CloseOut { get; set; }
 }
@@ -93,6 +97,7 @@ public class CAPAActionResponseDto
     public Guid Id { get; set; }
     public string Description { get; set; } = string.Empty;
     public DateTime DoneAt { get; set; }
+    public string? DoneAtFormatted { get; set; }
     public Guid? DoneById { get; set; }
     public string? DoneByName { get; set; }
     // JANGAN tambahkan properti Capa atau CapaId di sini!
@@ -107,6 +112,7 @@ public class CloseOutResponseDto
     public bool IsEffective { get; set; }
     public string VerificationNotes { get; set; } = string.Empty;
     public DateTime VerifiedAt { get; set; }
+    public string? VerifiedAtFormatted { get; set; }
     public Guid? VerifiedById { get; set; }
     public string? VerifiedByName { get; set; }
     // JANGAN tambahkan properti Capa di sini!

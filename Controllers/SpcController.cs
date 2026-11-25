@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using ExcelDataReader;
 using QualiTrack.Data;
 using QualiTrack.DTOs;
+using QualiTrack.Helpers;
 using QualiTrack.Models;
 using System.Text;
 using System.Security.Claims;
@@ -137,6 +138,7 @@ public class SpcController(AppDbContext db) : ControllerBase
             IsStable = analysis.IsStable,
             DataCount = analysis.DataCount,
             AnalyzedAt = analysis.AnalyzedAt,
+            AnalyzedAtFormatted = DateHelper.FormatDateTime(analysis.AnalyzedAt),
             Data = data.Select(d => Math.Round(d, 4)).ToList(),
             Target = analysis.Target,
             Unit = analysis.Unit,
@@ -199,6 +201,9 @@ public class SpcController(AppDbContext db) : ControllerBase
             })
             .ToListAsync();
 
+        foreach (var item in data)
+            item.AnalyzedAtFormatted = DateHelper.FormatDateTime(item.AnalyzedAt);
+
         return Ok(new
         {
             period,
@@ -236,6 +241,7 @@ public class SpcController(AppDbContext db) : ControllerBase
             Status = analysis.Status,
             DataCount = analysis.DataCount,
             AnalyzedAt = analysis.AnalyzedAt,
+            AnalyzedAtFormatted = DateHelper.FormatDateTime(analysis.AnalyzedAt),
             IsStable = analysis.IsStable,
             Data = analysis.DataPoints,
             Target = analysis.Target,

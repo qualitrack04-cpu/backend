@@ -6,6 +6,7 @@ public class RecentActivityDto
     // CapaAction | CapaVerified | FindingReported
     public string Description { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
+    public string? TimestampFormatted { get; set; }
     public Guid RelatedId { get; set; } // Id Capa/Finding terkait (buat fe)
 
 }

@@ -51,4 +51,5 @@ public class CapaStatusResponseDto
     public bool IsActive { get; set; }
     public int UsageCount { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? CreatedAtFormatted { get; set; }
 }

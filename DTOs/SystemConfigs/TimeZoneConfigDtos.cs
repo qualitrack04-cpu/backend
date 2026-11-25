@@ -14,6 +14,7 @@ public class TimeZoneResponseDto
     public string GetSystemTimeZoneId { get; set; } = string.Empty;
     public int UtcOffsets { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedAtFormatted { get; set; }
 }
 
 public class TimeZoneOptionDto

@@ -6,6 +6,7 @@ using QualiTrack.Data;
 using QualiTrack.Models;
 using QualiTrack.DTOs;
 using QualiTrack.Filters;
+using QualiTrack.Helpers;
 using QualiTrack.Constants;
 
 namespace QualiTrack.Controllers;
@@ -73,6 +74,8 @@ public class CapaController(AppDbContext db) : ControllerBase
             })
             .ToListAsync();
 
+        foreach (var item in response) FillFormatted(item);
+
         return Ok(response);
     }
 
@@ -132,6 +135,8 @@ public class CapaController(AppDbContext db) : ControllerBase
                 }
             })
             .ToListAsync();
+
+        foreach (var item in response) FillFormatted(item);
 
         return Ok(response);
     }
@@ -337,7 +342,8 @@ public class CapaController(AppDbContext db) : ControllerBase
             Description = action.Description,
             DoneById = action.DoneById,
             DoneByName = doneBy?.FullName,
-            DoneAt = action.DoneAt
+            DoneAt = action.DoneAt,
+            DoneAtFormatted = DateHelper.FormatDateTime(action.DoneAt)
         };
         return Ok(response);
     }
@@ -417,7 +423,8 @@ public class CapaController(AppDbContext db) : ControllerBase
             VerificationNotes = verification.VerificationNotes,
             VerifiedById = verification.VerifiedById,
             VerifiedByName = verifiedBy?.FullName,
-            VerifiedAt = verification.VerifiedAt
+            VerifiedAt = verification.VerifiedAt,
+            VerifiedAtFormatted = DateHelper.FormatDateTime(verification.VerifiedAt)
         };
         return Ok(response);
     }
@@ -435,7 +442,7 @@ public class CapaController(AppDbContext db) : ControllerBase
 
     private CAPAResponseDto MapToResponseDto(CAPA capa)
     {
-        return new CAPAResponseDto
+        var dto = new CAPAResponseDto
         {
             Id = capa.Id,
             FindingId = capa.FindingId,
@@ -473,5 +480,24 @@ public class CapaController(AppDbContext db) : ControllerBase
                 VerifiedAt = capa.CloseOut.VerifiedAt
             }
         };
+
+        FillFormatted(dto);
+        return dto;
+    }
+
+    // Melengkapi field tanggal human-readable (contoh: "21 August 2026").
+    // Dipisah dari projection LINQ supaya tidak perlu diterjemahkan oleh EF Core.
+    private static void FillFormatted(CAPAResponseDto dto)
+    {
+        dto.DeadlineFormatted = DateHelper.FormatDate(dto.Deadline);
+        dto.CreatedAtFormatted = DateHelper.FormatDateTime(dto.CreatedAt);
+        dto.ClosedAtFormatted = DateHelper.FormatDateTime(dto.ClosedAt);
+        dto.UpdatedAtFormatted = DateHelper.FormatDateTime(dto.UpdatedAt);
+
+        foreach (var action in dto.Actions)
+            action.DoneAtFormatted = DateHelper.FormatDateTime(action.DoneAt);
+
+        if (dto.CloseOut is not null)
+            dto.CloseOut.VerifiedAtFormatted = DateHelper.FormatDateTime(dto.CloseOut.VerifiedAt);
     }
 }

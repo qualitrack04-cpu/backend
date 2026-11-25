@@ -13,4 +13,5 @@ public class DateFormatResponseDto
 {
     public string DateFormat { get; set; } = string.Empty;
     public DateTime? UpdateAt { get; set; }
+    public string? UpdateAtFormatted { get; set; }
 }

@@ -29,5 +29,7 @@ public class DepartmentResponseDto
     public string? LogoUrl { get; set; }
     public string Color { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public string? CreatedAtFormatted { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedAtFormatted { get; set; }
 }
